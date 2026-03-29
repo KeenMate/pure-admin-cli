@@ -1,0 +1,31 @@
+{
+  "name": "@keenmate/pureadmin",
+  "version": "1.0.0-rc01",
+  "description": "CLI for browsing, downloading, and managing Pure Admin themes",
+  "bin": {
+    "pureadmin": "./bin/pureadmin.js"
+  },
+  "keywords": [
+    "pure-admin",
+    "admin",
+    "themes",
+    "css",
+    "scss",
+    "cli"
+  ],
+  "author": "KeenMate",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KeenMate/pure-admin-cli.git"
+  },
+  "homepage": "https://pureadmin.io",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "bin/",
+    "README.md",
+    "LICENSE"
+  ]
+}
