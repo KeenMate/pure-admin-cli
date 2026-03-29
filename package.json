@@ -1,7 +1,7 @@
 {
   "name": "@keenmate/pureadmin",
-  "version": "1.0.0-rc01",
-  "description": "CLI for browsing, downloading, and managing Pure Admin themes",
+  "version": "1.0.0-rc02",
+  "description": "CLI for building, publishing, and consuming Pure Admin themes — scaffold apps, manage theme packages, and integrate with pureadmin.io",
   "bin": {
     "pureadmin": "./bin/pureadmin.js"
   },

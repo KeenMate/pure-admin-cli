@@ -1,6 +1,6 @@
 # @keenmate/pureadmin
 
-CLI for browsing, downloading, and managing [Pure Admin](https://pureadmin.io) themes.
+CLI for building, publishing, and consuming [Pure Admin](https://pureadmin.io) themes. Scaffold apps, manage theme packages, and integrate with pureadmin.io.
 
 ## Usage
 
@@ -16,6 +16,52 @@ pureadmin <command> [options]
 ```
 
 ## Commands
+
+### build — Compile SCSS to CSS
+
+```bash
+# Build all themes in workspace
+pureadmin build
+
+# Build specific theme(s)
+pureadmin build audi corporate
+```
+
+Works in multi-theme workspaces (directories with `theme.json`) and single-theme projects.
+
+### pack — Package theme into ZIP
+
+```bash
+# Build + pack all themes
+pureadmin pack
+
+# Pack specific theme(s)
+pureadmin pack audi
+
+# Pack without building (use existing CSS)
+pureadmin pack audi --no-build
+```
+
+Computes SHA-256 checksums for all files, metadata hash, `content_sha`, detects external domains in CSS, and rejects undeclared JavaScript.
+
+### publish — Pack + upload to pureadmin.io
+
+```bash
+# Build + pack + upload all themes
+pureadmin publish
+
+# Publish specific theme
+pureadmin publish audi
+
+# With explicit API key
+pureadmin publish audi --api-key YOUR_KEY
+```
+
+API key resolution (in order of precedence):
+1. `--api-key` flag
+2. `pure-admin.json` → `apiKey`
+3. `~/.pure-admin.json` → `apiKey`
+4. `$PUREADMIN_API_KEY` environment variable
 
 ### list — List all themes
 
