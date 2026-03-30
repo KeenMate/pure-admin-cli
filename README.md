@@ -59,9 +59,25 @@ pureadmin publish audi --api-key YOUR_KEY
 
 API key resolution (in order of precedence):
 1. `--api-key` flag
-2. `pure-admin.json` → `apiKey`
-3. `~/.pure-admin.json` → `apiKey`
-4. `$PUREADMIN_API_KEY` environment variable
+2. `.pureadmin.json` → `apiKey` (gitignored, local overrides)
+3. `pureadmin.json` → `apiKey` (project config)
+4. `~/.pureadmin.json` → `apiKey` (user defaults)
+5. `$PUREADMIN_API_KEY` environment variable
+
+### validate — Check theme CSS quality
+
+```bash
+# Validate all themes in workspace
+pureadmin validate
+
+# Validate specific theme
+pureadmin validate audi
+```
+
+Checks:
+- **Readability** — WCAG contrast ratios for outline/filled buttons and color slots per mode (dark/light)
+- **CSS Variables** — Required `--pa-*` variable definitions
+- **Consistency** — Hardcoded border-radius values that should use CSS variables
 
 ### list — List all themes
 
@@ -137,7 +153,7 @@ pureadmin themes express --offline
 pureadmin themes express --dir public/themes
 ```
 
-Theme configuration is saved to `pure-admin.json`:
+Theme configuration is saved to `pureadmin.json`:
 
 ```json
 {
@@ -158,14 +174,6 @@ Checks each configured theme's `content_sha` against the server and re-downloads
 
 ```bash
 pureadmin update
-```
-
-```
-  Checking 3 theme(s) for updates...
-  audi: v2.0.2 → v2.1.0          ← re-downloaded
-  corporate: v2.0.2 — unchanged  ← skipped
-  dark: v2.0.2 — unchanged       ← skipped
-  Summary: 1 updated, 2 unchanged, 0 failed
 ```
 
 ### init — Scaffold a new theme project
@@ -199,41 +207,50 @@ Options:
 
 ## Configuration
 
-Configuration is resolved in order of precedence:
+All configuration is JSON. Three levels, merged in order (later overrides earlier):
 
-| Source | Description |
-|--------|-------------|
-| `--server <url>` | CLI flag, highest priority |
-| `PUREADMIN_URL` | Environment variable |
-| `pure-admin.json` | Project config (searched up from cwd) |
-| `~/.pure-admin.json` | User-level defaults |
-| `https://pureadmin.io` | Fallback |
+| File | Purpose | Check in? |
+|------|---------|-----------|
+| `~/.pureadmin.json` | User defaults (API URL, key) | N/A |
+| `pureadmin.json` | Project config (themes, URL) | Yes |
+| `.pureadmin.json` | Local overrides (API key) | No (gitignore) |
 
-### pure-admin.json
+CLI flags (`--server`, `--api-key`) and env vars (`PUREADMIN_URL`, `PUREADMIN_API_KEY`) override all config files.
 
-Place a `pure-admin.json` in your project root to configure the CLI and track themes:
+### pureadmin.json (project config)
+
+Checked into the repo. Tracks themes and project settings:
 
 ```json
 {
-  "url": "http://localhost:8888",
+  "url": "https://pureadmin.io",
   "themesDir": "static/themes",
   "themes": {
-    "audi": { "version": "2.0.2", "content_sha": "sha256:...", "offline": false }
+    "audi": { "version": "2.3.2", "content_sha": "sha256:...", "offline": false }
   }
 }
 ```
 
-### ~/.pure-admin.json
+### .pureadmin.json (local overrides)
 
-User-level defaults (e.g., always use a local dev server):
+Gitignored. Merges on top of `pureadmin.json` — use for secrets:
 
 ```json
 {
-  "url": "http://localhost:8888"
+  "apiKey": "your-api-key-here"
 }
 ```
 
-Project config values override user config. The `--server` flag overrides both.
+### ~/.pureadmin.json (user defaults)
+
+Base defaults for all projects. On Windows: `C:\Users\<username>\.pureadmin.json`
+
+```json
+{
+  "url": "https://pureadmin.io",
+  "apiKey": "your-default-key"
+}
+```
 
 ## Links
 
