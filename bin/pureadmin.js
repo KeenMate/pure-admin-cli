@@ -32,34 +32,66 @@ const fs = require('fs');
 const path = require('path');
 
 // ---------------------------------------------------------------------------
-// Config: pure-admin.json → env var → default
+// Config: pureadmin.json / .pureadmin → env var → default
 // ---------------------------------------------------------------------------
+
+// Parse dotenv-style .pureadmin files (KEY=value lines)
+function parseDotenv(content) {
+  const result = {};
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq < 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const val = trimmed.slice(eq + 1).trim();
+    if (key === 'PUREADMIN_API_KEY') result.apiKey = val;
+    if (key === 'PUREADMIN_URL') result.url = val;
+  }
+  return result;
+}
+
+// Try loading a config file (JSON or dotenv)
+function tryLoadConfig(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8').trim();
+    if (content.startsWith('{')) return JSON.parse(content);
+    return parseDotenv(content);
+  } catch { return null; }
+}
+
 function loadConfig() {
   const config = {};
+  const configNames = ['pureadmin.json', '.pureadmin'];
 
-  // 1. User home (~/.pure-admin.json) — base defaults
+  // 1. User home (~/.pureadmin or ~/pureadmin.json) — base defaults
   const home = process.env.HOME || process.env.USERPROFILE || '';
   if (home) {
-    const homePath = path.join(home, '.pure-admin.json');
-    if (fs.existsSync(homePath)) {
-      try {
-        Object.assign(config, JSON.parse(fs.readFileSync(homePath, 'utf-8')));
-        config._configPath = homePath;
-      } catch {}
+    for (const name of configNames) {
+      const data = tryLoadConfig(path.join(home, name));
+      if (data) {
+        Object.assign(config, data);
+        config._configPath = path.join(home, name);
+        break;
+      }
     }
   }
 
-  // 2. Project-level (pure-admin.json, walks up from cwd) — overrides home
+  // 2. Project-level (walks up from cwd) — overrides home
   let dir = process.cwd();
   while (true) {
-    const configPath = path.join(dir, 'pure-admin.json');
-    if (fs.existsSync(configPath)) {
-      try {
-        Object.assign(config, JSON.parse(fs.readFileSync(configPath, 'utf-8')));
-        config._configPath = configPath;
-      } catch {}
-      break;
+    let found = false;
+    for (const name of configNames) {
+      const data = tryLoadConfig(path.join(dir, name));
+      if (data) {
+        Object.assign(config, data);
+        config._configPath = path.join(dir, name);
+        found = true;
+        break;
+      }
     }
+    if (found) break;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
@@ -830,10 +862,10 @@ ${themeOptions}
 // Project config helpers
 // ---------------------------------------------------------------------------
 function findProjectConfig() {
-  // Find the nearest pure-admin.json from cwd (not home — project only)
+  // Find the nearest pureadmin.json from cwd (not home — project only)
   let dir = process.cwd();
   while (true) {
-    const p = path.join(dir, 'pure-admin.json');
+    const p = path.join(dir, 'pureadmin.json');
     if (fs.existsSync(p)) return p;
     const parent = path.dirname(dir);
     if (parent === dir) break;
@@ -849,7 +881,7 @@ function loadProjectConfig() {
       return { path: configPath, data: JSON.parse(fs.readFileSync(configPath, 'utf-8')) };
     } catch {}
   }
-  return { path: path.join(process.cwd(), 'pure-admin.json'), data: {} };
+  return { path: path.join(process.cwd(), 'pureadmin.json'), data: {} };
 }
 
 function saveProjectConfig(configPath, data) {
@@ -1421,7 +1453,7 @@ async function cmdPublish(themeNames, opts) {
   const { execSync } = require('child_process');
   const root = process.cwd();
 
-  // Resolve API key: --api-key > pure-admin.json > ~/.pure-admin.json > env
+  // Resolve API key: --api-key > pureadmin.json/.pureadmin > env
   const apiKey = opts.apiKey
     || config.apiKey
     || process.env.PUREADMIN_API_KEY
@@ -1431,8 +1463,8 @@ async function cmdPublish(themeNames, opts) {
     console.error(`\n  ${bold('Error:')} API key is required.`);
     console.error(`  Set it via:`);
     console.error(`    --api-key KEY`);
-    console.error(`    pure-admin.json: { "apiKey": "..." }`);
-    console.error(`    ~/.pure-admin.json: { "apiKey": "..." }`);
+    console.error(`    pureadmin.json: { "apiKey": "..." }`);
+    console.error(`    .pureadmin: PUREADMIN_API_KEY=...`);
     console.error(`    PUREADMIN_API_KEY=... environment variable\n`);
     process.exit(1);
   }
@@ -1546,8 +1578,9 @@ function usage(error) {
   ${bold('Configuration (in order of precedence):')}
     --server <url>              CLI flag
     PUREADMIN_URL               Environment variable
-    pure-admin.json             Project config (searched up from cwd)
-    ~/.pure-admin.json          User config
+    pureadmin.json              Project config (JSON, searched up from cwd)
+    .pureadmin                  Project config (dotenv: KEY=value)
+    ~/.pureadmin                User config
 
   ${bold('Examples:')}
     pureadmin list
