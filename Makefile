@@ -41,7 +41,7 @@ publish-rc:
 
 # Smoke test
 test:
-	node bin/pureadmin.js --help
+	node bin/pureadmin.js --version
 
 # Link for local development
 link:
