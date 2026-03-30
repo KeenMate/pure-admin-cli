@@ -1,18 +1,24 @@
 # @keenmate/pureadmin
 
-CLI for building, publishing, and consuming [Pure Admin](https://pureadmin.io) themes. Scaffold apps, manage theme packages, and integrate with pureadmin.io.
+The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a lightweight, data-focused CSS/SCSS admin framework built for real applications.
 
-## Usage
+Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
-```bash
-npx @keenmate/pureadmin <command> [options]
-```
+- **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
+- **Browse & download** — [pureadmin.io](https://pureadmin.io)
+- **Theme source** — [github.com/keenmate/pure-admin-themes](https://github.com/keenmate/pure-admin-themes)
+- **Framework source** — [github.com/keenmate/pure-admin](https://github.com/keenmate/pure-admin)
 
-Or install globally:
+## Install
 
 ```bash
 npm install -g @keenmate/pureadmin
-pureadmin <command> [options]
+```
+
+Or use without installing:
+
+```bash
+npx @keenmate/pureadmin <command>
 ```
 
 ## Commands
@@ -251,13 +257,6 @@ Base defaults for all projects. On Windows: `C:\Users\<username>\.pureadmin.json
   "apiKey": "your-default-key"
 }
 ```
-
-## Links
-
-- [pureadmin.io](https://pureadmin.io) — theme gallery
-- [Documentation](https://pureadmin.io/docs) — guides for using and creating themes
-- [API Reference](https://pureadmin.io/api) — REST endpoints
-- [GitHub](https://github.com/keenmate/pure-admin) — Pure Admin framework
 
 ## License
 
