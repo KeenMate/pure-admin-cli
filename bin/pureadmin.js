@@ -25,11 +25,11 @@
 //   publish [theme...]       Build + pack + upload to pureadmin.io
 // =============================================================================
 
-const TOOL_VERSION = '1.0.0-rc02';
-const TOOL_NAME = 'pureadmin-cli.js';
-
 const fs = require('fs');
 const path = require('path');
+
+const TOOL_VERSION = require(path.join(__dirname, '..', 'package.json')).version;
+const TOOL_NAME = 'pureadmin';
 
 // ---------------------------------------------------------------------------
 // Config: pureadmin.json + .pureadmin.json → env var → default
