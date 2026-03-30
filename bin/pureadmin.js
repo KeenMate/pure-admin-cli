@@ -32,66 +32,45 @@ const fs = require('fs');
 const path = require('path');
 
 // ---------------------------------------------------------------------------
-// Config: pureadmin.json / .pureadmin → env var → default
+// Config: pureadmin.json + .pureadmin.json → env var → default
 // ---------------------------------------------------------------------------
 
-// Parse dotenv-style .pureadmin files (KEY=value lines)
-function parseDotenv(content) {
-  const result = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eq = trimmed.indexOf('=');
-    if (eq < 0) continue;
-    const key = trimmed.slice(0, eq).trim();
-    const val = trimmed.slice(eq + 1).trim();
-    if (key === 'PUREADMIN_API_KEY') result.apiKey = val;
-    if (key === 'PUREADMIN_URL') result.url = val;
-  }
-  return result;
-}
-
-// Try loading a config file (JSON or dotenv)
-function tryLoadConfig(filePath) {
+function tryLoadJson(filePath) {
   if (!fs.existsSync(filePath)) return null;
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8').trim();
-    if (content.startsWith('{')) return JSON.parse(content);
-    return parseDotenv(content);
-  } catch { return null; }
+  try { return JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch { return null; }
 }
 
 function loadConfig() {
   const config = {};
-  const configNames = ['pureadmin.json', '.pureadmin'];
 
-  // 1. User home (~/.pureadmin or ~/pureadmin.json) — base defaults
+  // 1. User home (~/.pureadmin.json) — base defaults
   const home = process.env.HOME || process.env.USERPROFILE || '';
   if (home) {
-    for (const name of configNames) {
-      const data = tryLoadConfig(path.join(home, name));
-      if (data) {
-        Object.assign(config, data);
-        config._configPath = path.join(home, name);
-        break;
-      }
+    const data = tryLoadJson(path.join(home, '.pureadmin.json'));
+    if (data) {
+      Object.assign(config, data);
+      config._configPath = path.join(home, '.pureadmin.json');
     }
   }
 
-  // 2. Project-level (walks up from cwd) — overrides home
+  // 2. Project-level (walks up from cwd)
+  //    pureadmin.json  — base config (checked in)
+  //    .pureadmin.json — local overrides merged on top (gitignored, secrets)
   let dir = process.cwd();
   while (true) {
-    let found = false;
-    for (const name of configNames) {
-      const data = tryLoadConfig(path.join(dir, name));
-      if (data) {
-        Object.assign(config, data);
-        config._configPath = path.join(dir, name);
-        found = true;
-        break;
+    const base = tryLoadJson(path.join(dir, 'pureadmin.json'));
+    const local = tryLoadJson(path.join(dir, '.pureadmin.json'));
+    if (base || local) {
+      if (base) {
+        Object.assign(config, base);
+        config._configPath = path.join(dir, 'pureadmin.json');
       }
+      if (local) {
+        Object.assign(config, local);
+        config._configPath = path.join(dir, '.pureadmin.json');
+      }
+      break;
     }
-    if (found) break;
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
@@ -1463,8 +1442,9 @@ async function cmdPublish(themeNames, opts) {
     console.error(`\n  ${bold('Error:')} API key is required.`);
     console.error(`  Set it via:`);
     console.error(`    --api-key KEY`);
+    console.error(`    .pureadmin.json: { "apiKey": "..." }  ${dim('(gitignored)')}`);
     console.error(`    pureadmin.json: { "apiKey": "..." }`);
-    console.error(`    .pureadmin: PUREADMIN_API_KEY=...`);
+    console.error(`    ~/.pureadmin.json: { "apiKey": "..." }`);
     console.error(`    PUREADMIN_API_KEY=... environment variable\n`);
     process.exit(1);
   }
@@ -1575,12 +1555,12 @@ function usage(error) {
   ${bold('Global options:')}
     --server <url>              Override API base URL for this invocation
 
-  ${bold('Configuration (in order of precedence):')}
-    --server <url>              CLI flag
-    PUREADMIN_URL               Environment variable
-    pureadmin.json              Project config (JSON, searched up from cwd)
-    .pureadmin                  Project config (dotenv: KEY=value)
-    ~/.pureadmin                User config
+  ${bold('Configuration (JSON, in order of precedence):')}
+    --server / --api-key        CLI flags
+    PUREADMIN_URL / _API_KEY    Environment variables
+    .pureadmin.json             Local overrides (gitignored, merges into pureadmin.json)
+    pureadmin.json              Project config (checked in)
+    ~/.pureadmin.json           User defaults
 
   ${bold('Examples:')}
     pureadmin list
