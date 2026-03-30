@@ -323,6 +323,61 @@ function validateThemeCss(css, themeId) {
     }
   }
 
+  // --- Command Palette readability ---
+  for (const mode of modes) {
+    const modalBg = extractCssVarFromBlock(mode.css, '--pa-modal-content-bg');
+    const textColor = extractCssVarFromBlock(mode.css, '--pa-text-color-1');
+    const highlightBg = extractCssVarFromBlock(mode.css, '--pa-command-palette-highlight-bg');
+    const highlightText = extractCssVarFromBlock(mode.css, '--pa-command-palette-highlight-text');
+
+    if (modalBg && textColor && modalBg.startsWith('#') && textColor.startsWith('#')) {
+      const ratio = contrastRatio(textColor, modalBg);
+      const label = `${mode.name} → command palette text`;
+      const detail = `--pa-text-color-1: ${textColor} on --pa-modal-content-bg: ${modalBg}`;
+      if (ratio < 3) {
+        results.readability.push({ name: label, status: 'fail', detail: `${ratio.toFixed(1)}:1  ${detail}  (min 3:1)` });
+        errors.push(`${label} ${ratio.toFixed(1)}:1`);
+      } else if (ratio < 4.5) {
+        results.readability.push({ name: label, status: 'warn', detail: `${ratio.toFixed(1)}:1  ${detail}  (recommended 4.5:1)` });
+        warnings.push(`${label} ${ratio.toFixed(1)}:1`);
+      } else {
+        results.readability.push({ name: label, status: 'pass', detail: `${ratio.toFixed(1)}:1` });
+      }
+    }
+
+    const keyBg = extractCssVarFromBlock(mode.css, '--pa-command-palette-key-bg');
+    const keyText = extractCssVarFromBlock(mode.css, '--pa-command-palette-key-text');
+    if (keyBg && keyText && keyBg.startsWith('#') && keyText.startsWith('#')) {
+      const ratio = contrastRatio(keyText, keyBg);
+      const label = `${mode.name} → command palette key badge`;
+      const detail = `--pa-command-palette-key-text: ${keyText} on --pa-command-palette-key-bg: ${keyBg}`;
+      if (ratio < 3) {
+        results.readability.push({ name: label, status: 'fail', detail: `${ratio.toFixed(1)}:1  ${detail}  (min 3:1)` });
+        errors.push(`${label} ${ratio.toFixed(1)}:1`);
+      } else if (ratio < 4.5) {
+        results.readability.push({ name: label, status: 'warn', detail: `${ratio.toFixed(1)}:1  ${detail}  (recommended 4.5:1)` });
+        warnings.push(`${label} ${ratio.toFixed(1)}:1`);
+      } else {
+        results.readability.push({ name: label, status: 'pass', detail: `${ratio.toFixed(1)}:1` });
+      }
+    }
+
+    if (highlightBg && highlightText && highlightBg.startsWith('#') && highlightText.startsWith('#')) {
+      const ratio = contrastRatio(highlightText, highlightBg);
+      const label = `${mode.name} → command palette highlight`;
+      const detail = `--pa-command-palette-highlight-text: ${highlightText} on --pa-command-palette-highlight-bg: ${highlightBg}`;
+      if (ratio < 3) {
+        results.readability.push({ name: label, status: 'fail', detail: `${ratio.toFixed(1)}:1  ${detail}  (min 3:1)` });
+        errors.push(`${label} ${ratio.toFixed(1)}:1`);
+      } else if (ratio < 4.5) {
+        results.readability.push({ name: label, status: 'warn', detail: `${ratio.toFixed(1)}:1  ${detail}  (recommended 4.5:1)` });
+        warnings.push(`${label} ${ratio.toFixed(1)}:1`);
+      } else {
+        results.readability.push({ name: label, status: 'pass', detail: `${ratio.toFixed(1)}:1` });
+      }
+    }
+  }
+
   // --- CSS Variables: required definitions ---
   const required = [
     '--pa-border-radius', '--pa-border-radius-sm', '--pa-border-radius-lg',
