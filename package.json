@@ -3,7 +3,7 @@
   "version": "1.0.0-rc03",
   "description": "CLI for building, publishing, and consuming Pure Admin themes — scaffold apps, manage theme packages, and integrate with pureadmin.io",
   "bin": {
-    "pureadmin": "./bin/pureadmin.js"
+    "pureadmin": "bin/pureadmin.js"
   },
   "keywords": [
     "pure-admin",
@@ -17,7 +17,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/KeenMate/pure-admin-cli.git"
+    "url": "git+ssh://git@github.com/KeenMate/pure-admin-cli.git"
   },
   "homepage": "https://pureadmin.io",
   "engines": {
