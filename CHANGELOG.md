@@ -1,11 +1,23 @@
 # Changelog
 
+## 1.0.0-rc03 (2026-03-30)
+
+### Added
+- **`validate` command** — check theme CSS for readability (WCAG contrast ratios for outline/filled buttons and color slots per mode), required CSS variable definitions, and hardcoded border-radius consistency
+- **Version from package.json** — `TOOL_VERSION` now reads from `package.json` instead of hardcoded constant
+
+### Changed
+- **JSON-only config** — removed dotenv `.pureadmin` support. Config files are now `pureadmin.json` (project, checked in) + `.pureadmin.json` (local overrides, gitignored) + `~/.pureadmin.json` (user defaults)
+- **Config layering** — `.pureadmin.json` merges on top of `pureadmin.json` in the same directory, so secrets stay gitignored while project config is shared
+
+---
+
 ## 1.0.0-rc02 (2026-03-29)
 
 ### Added
 - **`build` command** — compile SCSS to CSS for one or all themes in a workspace. Works in multi-theme workspaces and single-theme projects.
 - **`pack` command** — build + package themes into distributable ZIPs with SHA-256 integrity checksums (`checksums.files`, `checksums.metadata`, `content_sha`). Detects external domains in CSS, rejects undeclared JavaScript. Supports `--no-build` to skip compilation.
-- **`publish` command** — build + pack + upload themes to pureadmin.io. API key resolved from `--api-key` flag, `pure-admin.json`, `~/.pure-admin.json`, or `$PUREADMIN_API_KEY`. Detects unchanged themes via checksum comparison.
+- **`publish` command** — build + pack + upload themes to pureadmin.io. API key resolved from `--api-key` flag, config files, or `$PUREADMIN_API_KEY`. Detects unchanged themes via checksum comparison.
 - **`pure-admin.json` config** — project-level configuration file. Searched up from cwd. Stores URL, API key, theme directory, and theme state (version, content_sha, offline flag).
 - **`~/.pure-admin.json` user config** — user-level defaults merged under project config.
 - **`--server` flag** — override API base URL for any command.
