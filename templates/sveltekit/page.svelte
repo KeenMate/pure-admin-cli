@@ -5,19 +5,19 @@
 <Heading level={1}>Dashboard</Heading>
 
 <div class="pa-grid pa-grid--3">
-	<Card title="Welcome">
+	<Card titleText="Welcome">
 		<Paragraph>
 			Your Pure Admin app is ready. Edit <code>src/routes/+page.svelte</code> to get started.
 		</Paragraph>
 	</Card>
 
-	<Card title="Theme">
+	<Card titleText="Theme">
 		<Paragraph>
 			Open the settings panel (gear icon) to switch between themes and modes.
 		</Paragraph>
 	</Card>
 
-	<Card title="Components">
+	<Card titleText="Components">
 		<Paragraph>
 			See the <a href="https://pureadmin.io/docs">documentation</a> for available components.
 		</Paragraph>
