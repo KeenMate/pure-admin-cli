@@ -9,7 +9,8 @@
 		SidebarItem,
 		Main,
 		Footer,
-		SettingsPanel
+		SettingsPanel{{#PROFILE_PANEL}},
+		ProfilePanel{{/PROFILE_PANEL}}
 	} from '@keenmate/svelte-pure-admin';
 	import type { ThemeOption } from '@keenmate/svelte-pure-admin';
 	import '../app.css';
@@ -36,7 +37,10 @@
 </script>
 
 <PureAdminProvider config={{
-	app: { name: '{{APP_DISPLAY_NAME}}' }
+	app: {
+		name: '{{APP_DISPLAY_NAME}}',
+		copyright: '{{COPYRIGHT}}'
+	}
 }}>
 	<Layout>
 		<Navbar onburgerclick={toggleSidebar} />
@@ -47,8 +51,8 @@
 				bind:mobileVisible={sidebarMobileVisible}
 			>
 				<SidebarItem href="/" label="Dashboard">
-				{#snippet icon()}<i class="fa fa-home"></i>{/snippet}
-			</SidebarItem>
+					{#snippet icon()}<i class="fa fa-home"></i>{/snippet}
+				</SidebarItem>
 			</Sidebar>
 
 			<LayoutContent>
@@ -64,5 +68,6 @@
 			themes={availableThemes}
 			defaultTheme="{{DEFAULT_THEME}}"
 		/>
+		{{#PROFILE_PANEL}}<ProfilePanel />{{/PROFILE_PANEL}}
 	</Layout>
 </PureAdminProvider>

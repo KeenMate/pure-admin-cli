@@ -643,14 +643,22 @@ async function cmdInit(id, name) {
 async function cmdCreate(appName, opts) {
   if (!appName) return usage('create requires an app name (e.g. my-app)');
 
-  const template = opts.template || 'sveltekit';
-  const themeIds = (opts.themes || 'corporate,audi,dark').split(',').map(s => s.trim());
-  const defaultTheme = opts.theme || themeIds[0];
-  const displayName = opts.name || appName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  // Read defaults from config (e.g. ~/.pureadmin.json)
+  const defaults = config.create || {};
+
+  const template = opts.template || defaults.template || 'sveltekit';
+  const themeIds = (opts.themes || defaults.defaultThemes || 'corporate,audi,dark').split(',').map(s => s.trim());
+  const defaultTheme = opts.theme || defaults.defaultTheme || themeIds[0];
+  const displayName = opts.name || defaults.company || appName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  const copyright = defaults.copyright || displayName;
+  const logo = defaults.logo || '';
+  const includeFontAwesome = opts.fontAwesome || defaults.fontAwesome || false;
+  const includeProfilePanel = !opts.noProfilePanel && (defaults.profilePanel !== false);
 
   console.log();
   console.log(bold(`  Creating ${displayName}`) + dim(` (${template} + Pure Admin)`));
   console.log(`  ${dim('Themes:')} ${themeIds.join(', ')} ${dim(`(default: ${defaultTheme})`)}`);
+  if (includeFontAwesome) console.log(`  ${dim('Icons:')} FontAwesome (CDN)`);
   console.log();
 
   const { execSync } = require('child_process');
@@ -660,8 +668,15 @@ async function cmdCreate(appName, opts) {
     let result = text;
     result = result.split('{{APP_NAME}}').join(appName);
     result = result.split('{{APP_DISPLAY_NAME}}').join(displayName);
+    result = result.split('{{COPYRIGHT}}').join(copyright);
+    result = result.split('{{LOGO}}').join(logo);
     result = result.split('{{DEFAULT_THEME}}').join(defaultTheme);
     result = result.split('{{THEME_IDS_QUOTED}}').join(themeIds.map(id => `'${id}'`).join(', '));
+    // Conditional blocks: {{#FONT_AWESOME}}...{{/FONT_AWESOME}}
+    result = result.replace(/\{\{#FONT_AWESOME\}\}([\s\S]*?)\{\{\/FONT_AWESOME\}\}/g,
+      includeFontAwesome ? '$1' : '');
+    result = result.replace(/\{\{#PROFILE_PANEL\}\}([\s\S]*?)\{\{\/PROFILE_PANEL\}\}/g,
+      includeProfilePanel ? '$1' : '');
     // These are set later after theme data is fetched
     if (result.includes('{{THEME_OPTIONS}}') && substituteVars._themeOptions) {
       result = result.split('{{THEME_OPTIONS}}').join(substituteVars._themeOptions);
@@ -1813,6 +1828,10 @@ async function main() {
       opts.themes = rest[++i];
     } else if (rest[i] === '--theme' && rest[i + 1]) {
       opts.theme = rest[++i];
+    } else if (rest[i] === '--font-awesome') {
+      opts.fontAwesome = true;
+    } else if (rest[i] === '--no-profile-panel') {
+      opts.noProfilePanel = true;
     } else if (rest[i] === '--offline') {
       opts.offline = true;
     } else if (rest[i] === '--no-build') {
@@ -1827,7 +1846,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --offline, --no-build, --no-makefile, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --font-awesome, --no-profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
