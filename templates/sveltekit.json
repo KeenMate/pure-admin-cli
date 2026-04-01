@@ -1,0 +1,34 @@
+{
+  "name": "sveltekit",
+  "displayName": "SvelteKit",
+  "description": "SvelteKit app with Pure Admin components and dynamic theme switching",
+  "version": "2.3.4",
+  "scaffold": {
+    "command": "npx sv create {{APP_NAME}} --template minimal --types ts --no-add-ons --no-install",
+    "fallback": "npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts"
+  },
+  "dependencies": {
+    "@keenmate/svelte-pure-admin": "latest",
+    "@keenmate/pure-admin-core": "latest"
+  },
+  "steps": [
+    { "action": "create", "path": "src/app.html", "template": "app.html" },
+    { "action": "create", "path": "src/app.css", "template": "app.css" },
+    { "action": "create", "path": "src/routes/+layout.svelte", "template": "layout.svelte" },
+    { "action": "create", "path": "src/routes/+page.svelte", "template": "page.svelte" },
+    { "action": "create", "path": "pureadmin.json", "template": "pureadmin.json" }
+  ],
+  "themeSetup": {
+    "themesDir": "static/themes",
+    "cssPath": "/themes/{{THEME_ID}}/css/{{THEME_ID}}.css"
+  },
+  "postSteps": [
+    "npm install",
+    "npx pureadmin themes"
+  ],
+  "instructions": [
+    "cd {{APP_NAME}}",
+    "npm run dev",
+    "Open http://localhost:5173"
+  ]
+}

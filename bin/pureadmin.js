@@ -113,6 +113,21 @@ function fetchJson(urlPath) {
   });
 }
 
+function fetchText(urlPath) {
+  return new Promise((resolve, reject) => {
+    const url = `${BASE_URL}${urlPath}`;
+    httpClient().get(url, { timeout: 10000 }, (res) => {
+      if (res.statusCode !== 200) {
+        return reject(new Error(`HTTP ${res.statusCode} from ${urlPath}`));
+      }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks).toString()));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
 function downloadFile(urlPath, destPath) {
   return new Promise((resolve, reject) => {
     const url = `${BASE_URL}${urlPath}`;
@@ -638,250 +653,153 @@ async function cmdCreate(appName, opts) {
   console.log(`  ${dim('Themes:')} ${themeIds.join(', ')} ${dim(`(default: ${defaultTheme})`)}`);
   console.log();
 
-  // 1. Fetch recipe
+  const { execSync } = require('child_process');
+
+  // Helper: substitute {{VAR}} placeholders (available early for scaffold command)
+  function substituteVars(text) {
+    let result = text;
+    result = result.split('{{APP_NAME}}').join(appName);
+    result = result.split('{{APP_DISPLAY_NAME}}').join(displayName);
+    result = result.split('{{DEFAULT_THEME}}').join(defaultTheme);
+    result = result.split('{{THEME_IDS_QUOTED}}').join(themeIds.map(id => `'${id}'`).join(', '));
+    // These are set later after theme data is fetched
+    if (result.includes('{{THEME_OPTIONS}}') && substituteVars._themeOptions) {
+      result = result.split('{{THEME_OPTIONS}}').join(substituteVars._themeOptions);
+    }
+    if (result.includes('{{THEMES_CONFIG}}') && substituteVars._themesConfig) {
+      result = result.split('{{THEMES_CONFIG}}').join(substituteVars._themesConfig);
+    }
+    return result;
+  }
+
+  // 1. Fetch recipe from server
   process.stdout.write(`  Fetching ${template} recipe... `);
   let recipe;
   try {
     recipe = await fetchJson(`/api/tools/templates/${template}`);
-    console.log(green('done'));
+    console.log(green(`v${recipe.version || 'latest'}`));
   } catch {
-    console.log(yellow('not found on server, using built-in'));
+    console.log(yellow('server unreachable, using fallback'));
     recipe = null;
   }
 
-  // 2. Run framework scaffold
-  const { execSync } = require('child_process');
+  // 2. Scaffold the framework project
+  const scaffoldCmd = recipe?.scaffold?.command || `npx sv create {{APP_NAME}} --template minimal --types ts --no-add-ons --no-install`;
+  const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts`;
 
-  console.log(`  Running SvelteKit scaffold...`);
+  console.log(`  Running ${template} scaffold...`);
   try {
-    execSync(`npx sv create ${appName} --template minimal --types ts --no-add-ons --no-install`, {
-      cwd: process.cwd(),
-      stdio: 'inherit'
-    });
+    execSync(substituteVars(scaffoldCmd), { cwd: process.cwd(), stdio: 'inherit' });
   } catch {
-    // Fallback to legacy command
     try {
-      execSync(`npm create svelte@latest ${appName} -- --template skeleton --types ts`, {
-        cwd: process.cwd(),
-        stdio: 'inherit'
-      });
+      execSync(substituteVars(scaffoldFallback), { cwd: process.cwd(), stdio: 'inherit' });
     } catch {
-      console.error(`\n  ${bold('Scaffold failed.')} Install sv globally: npm i -g sv, then retry.`);
+      console.error(`\n  ${bold('Scaffold failed.')} Create the project manually and re-run.`);
       process.exit(1);
     }
   }
 
   const appDir = path.join(process.cwd(), appName);
 
-  // 3. Fetch available theme data for building the config
+  // 3. Fetch theme data for template variables
   process.stdout.write(`  Fetching theme data... `);
   let themesData;
   try {
     const result = await fetchJson('/api/themes');
     themesData = result.themes.filter(t => themeIds.includes(t.slug));
     console.log(green(`${themesData.length} theme(s)`));
-  } catch (err) {
+  } catch {
     console.log(yellow('failed, using defaults'));
-    themesData = themeIds.map(id => ({ slug: id, name: id.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') }));
+    themesData = themeIds.map(id => ({
+      slug: id,
+      name: id.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' '),
+      latest: 'latest'
+    }));
   }
 
-  // 4. Write template files
-  console.log(`  Writing Pure Admin integration files...`);
-
-  // Build template variables
-  const themeIdsQuoted = themeIds.map(id => `'${id}'`).join(', ');
-  const themeOptions = themesData.map(t =>
+  // 4. Set theme-dependent template variables
+  substituteVars._themeOptions = themesData.map(t =>
     `\t\t{ id: '${t.slug}', name: '${t.name}', cssPath: '/themes/${t.slug}/css/${t.slug}.css' }`
   ).join(',\n');
+  substituteVars._themesConfig = themeIds.map(id => {
+    const t = themesData.find(d => d.slug === id);
+    return `    "${id}": { "version": "${t?.latest || 'latest'}", "offline": false }`;
+  }).join(',\n');
 
-  // app.html
-  const appHtml = `<!doctype html>
-<html lang="en">
-\t<head>
-\t\t<meta charset="utf-8" />
-\t\t<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-\t\t<meta name="viewport" content="width=device-width, initial-scale=1" />
-\t\t<script>
-\t\t\t(function() {
-\t\t\t\tvar validThemes = [${themeIdsQuoted}];
-\t\t\t\tvar theme = localStorage.getItem('theme');
-\t\t\t\tif (!theme || validThemes.indexOf(theme) === -1) {
-\t\t\t\t\tvar match = document.cookie.match(/(^| )theme=([^;]+)/);
-\t\t\t\t\ttheme = match ? match[2] : '${defaultTheme}';
-\t\t\t\t}
-\t\t\t\tif (validThemes.indexOf(theme) === -1) theme = '${defaultTheme}';
-\t\t\t\tvar link = document.createElement('link');
-\t\t\t\tlink.id = 'pa-theme-css';
-\t\t\t\tlink.rel = 'stylesheet';
-\t\t\t\tlink.href = '/themes/' + theme + '/css/' + theme + '.css';
-\t\t\t\tdocument.currentScript.parentNode.insertBefore(link, document.currentScript);
-\t\t\t})();
-\t\t</script>
-\t\t%sveltekit.head%
-\t</head>
-\t<body data-sveltekit-preload-data="hover">
-\t\t<script>
-\t\t\t(function() {
-\t\t\t\tvar themeMode = localStorage.getItem('theme-mode') || 'light';
-\t\t\t\tvar resolvedMode = themeMode === 'auto'
-\t\t\t\t\t? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-\t\t\t\t\t: themeMode;
-\t\t\t\tdocument.body.classList.add('pa-mode-' + resolvedMode);
-\t\t\t\tif (localStorage.getItem('sidebar-hidden') === 'true') document.body.classList.add('sidebar-hidden');
-\t\t\t\tif (localStorage.getItem('compact-mode') === 'true') document.body.classList.add('compact-mode');
-\t\t\t})();
-\t\t</script>
-\t\t<div style="display: contents">%sveltekit.body%</div>
-\t</body>
-</html>`;
+  // 5. Execute recipe steps — fetch templates from server, substitute, write
+  const steps = recipe?.steps || [
+    { action: 'create', path: 'src/app.html', template: 'app.html' },
+    { action: 'create', path: 'src/app.css', template: 'app.css' },
+    { action: 'create', path: 'src/routes/+layout.svelte', template: 'layout.svelte' },
+    { action: 'create', path: 'src/routes/+page.svelte', template: 'page.svelte' },
+    { action: 'create', path: 'pureadmin.json', template: 'pureadmin.json' },
+  ];
 
-  // +layout.svelte
-  const layoutSvelte = `<script lang="ts">
-\timport {
-\t\tPureAdminProvider,
-\t\tLayout,
-\t\tLayoutInner,
-\t\tLayoutContent,
-\t\tNavbar,
-\t\tSidebar,
-\t\tSidebarItem,
-\t\tMain,
-\t\tFooter,
-\t\tSettingsPanel
-\t} from '@keenmate/svelte-pure-admin';
-\timport type { PureAdminConfig, ThemeOption } from '@keenmate/svelte-pure-admin';
-\timport '../app.css';
+  // Pipeline: fetch all templates, then substitute, then write
+  const localTemplatesDir = path.join(__dirname, '..', 'templates', template);
 
-\tconst availableThemes: ThemeOption[] = [
-${themeOptions}
-\t];
+  console.log(`  Applying ${steps.length} template steps...`);
+  for (const step of steps) {
+    const destPath = path.join(appDir, step.path);
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
 
-\tlet { children } = $props();
+    let content;
 
-\tlet sidebarHidden = $state(false);
-\tlet sidebarMobileVisible = $state(false);
+    // Step 1: Try fetching from server
+    try {
+      content = await fetchText(`/api/tools/templates/${template}/${step.template}`);
+    } catch {
+      // Step 2: Fall back to bundled local template
+      const localPath = path.join(localTemplatesDir, step.template);
+      if (fs.existsSync(localPath)) {
+        content = fs.readFileSync(localPath, 'utf-8');
+      }
+    }
 
-\tfunction toggleSidebar() {
-\t\tif (typeof document !== 'undefined') {
-\t\t\tconst isMobile = window.innerWidth <= 768;
-\t\t\tif (isMobile) {
-\t\t\t\tsidebarMobileVisible = !sidebarMobileVisible;
-\t\t\t} else {
-\t\t\t\tsidebarHidden = !sidebarHidden;
-\t\t\t}
-\t\t}
-\t}
+    if (!content) {
+      console.log(`    ${yellow('!')} ${step.path} ${dim('(template not available)')}`);
+      continue;
+    }
 
-\tconst config: PureAdminConfig = {
-\t\tappName: '${displayName}',
-\t\tcopyright: {
-\t\t\ttext: '${displayName}',
-\t\t\tyear: new Date().getFullYear()
-\t\t}
-\t};
-</script>
+    // Step 3: Substitute variables
+    content = substituteVars(content);
 
-<PureAdminProvider {config}>
-\t<Layout>
-\t\t<Navbar appName={config.appName} onburgerclick={toggleSidebar} />
-
-\t\t<LayoutInner>
-\t\t\t<Sidebar bind:hidden={sidebarHidden} bind:mobileVisible={sidebarMobileVisible}>
-\t\t\t\t<SidebarItem href="/" label="Dashboard" icon="fa fa-home" />
-\t\t\t</Sidebar>
-
-\t\t\t<LayoutContent>
-\t\t\t\t<Main>
-\t\t\t\t\t{@render children()}
-\t\t\t\t</Main>
-\t\t\t\t<Footer copyright={config.copyright} />
-\t\t\t</LayoutContent>
-\t\t</LayoutInner>
-
-\t\t<SettingsPanel themes={availableThemes} defaultTheme="${defaultTheme}" />
-\t</Layout>
-</PureAdminProvider>`;
-
-  // +page.svelte
-  const pageSvelte = `<script lang="ts">
-\timport { Card, Heading, Paragraph } from '@keenmate/svelte-pure-admin';
-</script>
-
-<Heading level={1}>Dashboard</Heading>
-
-<div class="pa-grid pa-grid--3">
-\t<Card title="Welcome">
-\t\t<Paragraph>
-\t\t\tYour Pure Admin app is ready. Edit <code>src/routes/+page.svelte</code> to get started.
-\t\t</Paragraph>
-\t</Card>
-
-\t<Card title="Theme">
-\t\t<Paragraph>
-\t\t\tOpen the settings panel (gear icon) to switch between themes and modes.
-\t\t</Paragraph>
-\t</Card>
-
-\t<Card title="Components">
-\t\t<Paragraph>
-\t\t\tSee the <a href="https://pureadmin.io/docs">documentation</a> for available components.
-\t\t</Paragraph>
-\t</Card>
-</div>`;
-
-  // app.css
-  const appCss = `/* All styling comes from @keenmate/pure-admin-core via theme CSS files.
-   Add your app-specific overrides here. */
-`;
-
-  // copy-themes.js
-  process.stdout.write(`  Downloading copy-themes.js... `);
-  try {
-    fs.mkdirSync(path.join(appDir, 'scripts'), { recursive: true });
-    await downloadFile('/api/tools/templates/sveltekit/copy-themes.js', path.join(appDir, 'scripts', 'copy-themes.js'));
-    console.log(green('done'));
-  } catch {
-    // Fall back to writing a minimal version
-    console.log(yellow('using embedded version'));
+    // Step 4: Write file
+    fs.writeFileSync(destPath, content);
+    console.log(`    ${green('+')} ${step.path}`);
   }
 
-  // Write files
-  fs.writeFileSync(path.join(appDir, 'src', 'app.html'), appHtml);
-  fs.writeFileSync(path.join(appDir, 'src', 'app.css'), appCss);
-  fs.writeFileSync(path.join(appDir, 'src', 'routes', '+layout.svelte'), layoutSvelte);
-  fs.writeFileSync(path.join(appDir, 'src', 'routes', '+page.svelte'), pageSvelte);
+  // 6. Install dependencies
+  const deps = recipe?.dependencies || {
+    '@keenmate/svelte-pure-admin': 'latest',
+    '@keenmate/pure-admin-core': 'latest'
+  };
+  const depList = Object.entries(deps).map(([k, v]) => `${k}@${v}`).join(' ');
 
-  console.log(`    src/app.html ${dim('(FOUC-free theme loading)')}`);
-  console.log(`    src/app.css`);
-  console.log(`    src/routes/+layout.svelte ${dim('(Pure Admin layout + settings)')}`);
-  console.log(`    src/routes/+page.svelte ${dim('(starter dashboard)')}`);
-
-  // 5. Install dependencies
   console.log();
   console.log(`  Installing dependencies...`);
   try {
     execSync('npm install', { cwd: appDir, stdio: 'inherit' });
-    execSync('npm install @keenmate/svelte-pure-admin @keenmate/pure-admin-core', {
-      cwd: appDir,
-      stdio: 'inherit'
-    });
+    if (depList) {
+      execSync(`npm install ${depList}`, { cwd: appDir, stdio: 'inherit' });
+    }
   } catch {
     console.log(yellow('  npm install failed — run it manually'));
   }
 
-  // 6. Download themes
+  // 7. Download themes via pureadmin themes (uses the pureadmin.json we just wrote)
   console.log();
   console.log(`  Downloading themes...`);
   for (const id of themeIds) {
-    const themeDir = path.join(appDir, 'static', 'themes', id);
-    const zipPath = path.join(appDir, 'static', 'themes', `${id}.zip`);
+    const themesDir = recipe?.themeSetup?.themesDir || 'static/themes';
+    const themeDir = path.join(appDir, themesDir, id);
+    const zipPath = path.join(appDir, themesDir, `${id}.zip`);
 
     process.stdout.write(`    ${id}... `);
     try {
-      fs.mkdirSync(path.join(appDir, 'static', 'themes'), { recursive: true });
+      fs.mkdirSync(path.join(appDir, themesDir), { recursive: true });
       await downloadFile(`/api/themes/${id}/download`, zipPath);
-      fs.mkdirSync(themeDir, { recursive: true });
-      execSync(`unzip -o "${zipPath}" -d "${themeDir}"`, { stdio: 'pipe' });
+      extractThemeZip(zipPath, themeDir);
       fs.unlinkSync(zipPath);
       console.log(green('done'));
     } catch (err) {
@@ -889,14 +807,13 @@ ${themeOptions}
     }
   }
 
-  // 7. Done
+  // 8. Done
+  const instructions = recipe?.instructions || [`cd ${appName}`, 'npm run dev', 'Open http://localhost:5173'];
   console.log();
   console.log(bold('  App created!'));
   console.log();
   console.log(`  ${dim('Next steps:')}`);
-  console.log(`    cd ${appName}`);
-  console.log(`    npm run dev`);
-  console.log(`    ${dim('Open http://localhost:5173')}`);
+  instructions.forEach(i => console.log(`    ${substituteVars(i)}`));
   console.log();
 }
 

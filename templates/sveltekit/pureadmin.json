@@ -1,0 +1,7 @@
+{
+  "url": "https://pureadmin.io",
+  "themesDir": "static/themes",
+  "themes": {
+    {{THEMES_CONFIG}}
+  }
+}
