@@ -1605,7 +1605,7 @@ function usage(error) {
 
   ${bold('Themes options:')}
     --offline                   Commit theme files to repo (for builds without network)
-    --dir <path>                Theme output directory (default: static/themes)
+    --dir <path>                Theme output directory (default: static/themes, alias: --themes-dir)
 
   ${bold('Global options:')}
     --server <url>              Override API base URL for this invocation
@@ -1796,9 +1796,13 @@ async function main() {
       opts.noBuild = true;
     } else if (rest[i] === '--api-key' && rest[i + 1]) {
       opts.apiKey = rest[++i];
-    } else if (rest[i] === '--dir' && rest[i + 1]) {
+    } else if ((rest[i] === '--dir' || rest[i] === '--themes-dir') && rest[i + 1]) {
       opts.dir = rest[++i];
-    } else if (!rest[i].startsWith('--')) {
+    } else if (rest[i].startsWith('--')) {
+      console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --offline, --no-build, --version, --output\n`);
+      process.exit(1);
+    } else {
       positional.push(rest[i]);
     }
   }
