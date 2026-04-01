@@ -678,9 +678,13 @@ async function cmdCreate(appName, opts) {
   try {
     recipe = await fetchJson(`/api/tools/templates/${template}`);
     console.log(green(`v${recipe.version || 'latest'}`));
+    if (opts.verbose) {
+      console.log(dim(`    recipe: ${recipe.steps?.length || 0} steps, ${Object.keys(recipe.dependencies || {}).length} deps`));
+    }
   } catch {
     console.log(yellow('server unreachable, using fallback'));
     recipe = null;
+    if (opts.verbose) console.log(dim(`    fallback: bundled templates from ${path.join(__dirname, '..', 'templates', template)}`));
   }
 
   // 2. Scaffold the framework project
@@ -688,6 +692,7 @@ async function cmdCreate(appName, opts) {
   const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts`;
 
   console.log(`  Running ${template} scaffold...`);
+  if (opts.verbose) console.log(dim(`    command: ${substituteVars(scaffoldCmd)}`));
   try {
     execSync(substituteVars(scaffoldCmd), { cwd: process.cwd(), stdio: 'inherit' });
   } catch {
@@ -738,21 +743,25 @@ async function cmdCreate(appName, opts) {
   // Pipeline: fetch all templates, then substitute, then write
   const localTemplatesDir = path.join(__dirname, '..', 'templates', template);
 
+  const verbose = opts.verbose || false;
   console.log(`  Applying ${steps.length} template steps...`);
   for (const step of steps) {
     const destPath = path.join(appDir, step.path);
     fs.mkdirSync(path.dirname(destPath), { recursive: true });
 
     let content;
+    let source = '';
 
     // Step 1: Try fetching from server
     try {
       content = await fetchText(`/api/tools/templates/${template}/${step.template}`);
+      source = 'server';
     } catch {
       // Step 2: Fall back to bundled local template
       const localPath = path.join(localTemplatesDir, step.template);
       if (fs.existsSync(localPath)) {
         content = fs.readFileSync(localPath, 'utf-8');
+        source = 'local';
       }
     }
 
@@ -761,12 +770,22 @@ async function cmdCreate(appName, opts) {
       continue;
     }
 
+    const rawSize = content.length;
+
     // Step 3: Substitute variables
     content = substituteVars(content);
 
     // Step 4: Write file
     fs.writeFileSync(destPath, content);
-    console.log(`    ${green('+')} ${step.path}`);
+
+    if (verbose) {
+      const sizeKB = (content.length / 1024).toFixed(1);
+      const vars = (content.match(/\{\{[A-Z_]+\}\}/g) || []);
+      const unreplaced = vars.length > 0 ? yellow(` ${vars.length} unreplaced var(s): ${vars.join(', ')}`) : '';
+      console.log(`    ${green('+')} ${step.path} ${dim(`[${source}, ${step.template}, ${sizeKB}KB]`)}${unreplaced}`);
+    } else {
+      console.log(`    ${green('+')} ${step.path}`);
+    }
   }
 
   // 6. Install dependencies
@@ -1719,13 +1738,15 @@ async function main() {
       opts.offline = true;
     } else if (rest[i] === '--no-build') {
       opts.noBuild = true;
+    } else if (rest[i] === '--verbose' || rest[i] === '-v') {
+      opts.verbose = true;
     } else if (rest[i] === '--api-key' && rest[i + 1]) {
       opts.apiKey = rest[++i];
     } else if ((rest[i] === '--dir' || rest[i] === '--themes-dir') && rest[i + 1]) {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --offline, --no-build, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
