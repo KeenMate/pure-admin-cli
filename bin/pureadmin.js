@@ -716,8 +716,15 @@ async function cmdCreate(appName, opts) {
       console.log(dim(`    recipe: ${recipe.steps?.length || 0} steps, ${Object.keys(recipe.dependencies || {}).length} deps`));
     }
   } catch {
-    console.log(yellow('server unreachable, using fallback'));
-    recipe = null;
+    // Fall back to bundled recipe JSON
+    const localRecipePath = path.join(__dirname, '..', 'templates', `${template}.json`);
+    if (fs.existsSync(localRecipePath)) {
+      try { recipe = JSON.parse(fs.readFileSync(localRecipePath, 'utf-8')); } catch { recipe = null; }
+      console.log(yellow(`local fallback v${recipe?.version || '?'}`));
+    } else {
+      console.log(yellow('no recipe available'));
+      recipe = null;
+    }
     if (opts.verbose) console.log(dim(`    fallback: bundled templates from ${path.join(__dirname, '..', 'templates', template)}`));
   }
 
