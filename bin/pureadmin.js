@@ -697,6 +697,12 @@ async function cmdCreate(appName, opts) {
     if (result.includes('{{THEMES_CONFIG}}') && substituteVars._themesConfig) {
       result = result.split('{{THEMES_CONFIG}}').join(substituteVars._themesConfig);
     }
+    if (result.includes('{{SIDEBAR_ITEMS}}') && substituteVars._sidebarItems) {
+      result = result.split('{{SIDEBAR_ITEMS}}').join(substituteVars._sidebarItems);
+    }
+    // Per-page variables (set by caller)
+    if (substituteVars._pageLabel) result = result.split('{{PAGE_LABEL}}').join(substituteVars._pageLabel);
+    if (substituteVars._pageEntity) result = result.split('{{PAGE_ENTITY}}').join(substituteVars._pageEntity);
     return result;
   }
 
@@ -759,14 +765,51 @@ async function cmdCreate(appName, opts) {
     return `    "${id}": { "version": "${t?.latest || 'latest'}", "offline": false }`;
   }).join(',\n');
 
-  // 5. Execute recipe steps — fetch templates from server, substitute, write
-  const steps = recipe?.steps || [
-    { action: 'create', path: 'src/app.html', template: 'app.html' },
-    { action: 'create', path: 'src/app.css', template: 'app.css' },
-    { action: 'create', path: 'src/routes/+layout.svelte', template: 'layout.svelte' },
-    { action: 'create', path: 'src/routes/+page.svelte', template: 'page.svelte' },
-    { action: 'create', path: 'pureadmin.json', template: 'pureadmin.json' },
+  // 5. Resolve pages from preset or recipe defaults
+  const pageTypes = recipe?.pageTypes || {};
+  const pages = (preset?.pages) || recipe?.defaultPages || [{ type: 'dashboard', label: 'Dashboard' }];
+
+  // Build sidebar items from pages
+  const sidebarItems = pages
+    .filter(p => pageTypes[p.type]?.icon !== null)
+    .map(p => {
+      const pt = pageTypes[p.type] || {};
+      const label = p.label || pt.defaultLabel || p.type;
+      const icon = p.icon || pt.icon || 'fa fa-circle';
+      const entity = p.entity || p.type;
+      const href = p.type === 'dashboard' ? '/' : `/${entity}`;
+      return `\t\t\t\t<SidebarItem href="${href}" label="${label}">\n\t\t\t\t\t{#snippet icon()}<i class="${icon}"></i>{/snippet}\n\t\t\t\t</SidebarItem>`;
+    })
+    .join('\n');
+
+  // Register sidebar items for variable substitution
+  substituteVars._sidebarItems = sidebarItems;
+
+  // Generate page route steps
+  const pageSteps = pages.map(p => {
+    const pt = pageTypes[p.type] || {};
+    const entity = p.entity || p.type;
+    const route = (pt.route || `src/routes/${entity}/+page.svelte`).replace(/\{\{entity\}\}/g, entity);
+    return {
+      action: 'create',
+      path: route,
+      template: pt.template || `pages/${p.type}.svelte`,
+      _pageLabel: p.label || pt.defaultLabel || entity,
+      _pageEntity: entity,
+    };
+  });
+
+  // 6. Execute recipe steps + page steps
+  const steps = [
+    ...(recipe?.steps || [
+      { action: 'create', path: 'src/app.html', template: 'app.html' },
+      { action: 'create', path: 'src/app.css', template: 'app.css' },
+      { action: 'create', path: 'src/routes/+layout.svelte', template: 'layout.svelte' },
+      { action: 'create', path: 'pureadmin.json', template: 'pureadmin.json' },
+      { action: 'json-merge', path: 'package.json', data: { scripts: { themes: 'pureadmin themes', 'themes:update': 'pureadmin update' } } },
+    ]),
     ...(includeMakefile ? [{ action: 'create', path: 'Makefile', template: 'Makefile' }] : []),
+    ...pageSteps,
   ];
 
   // Pipeline: fetch all templates, then substitute, then write
@@ -864,6 +907,10 @@ async function cmdCreate(appName, opts) {
       console.log(`    ${yellow('!')} ${step.path} ${dim('(template not available)')}`);
       continue;
     }
+
+    // Set per-page variables if this is a page step
+    substituteVars._pageLabel = step._pageLabel || null;
+    substituteVars._pageEntity = step._pageEntity || null;
 
     let content = substituteVars(tmpl.content);
     fs.writeFileSync(destPath, content);

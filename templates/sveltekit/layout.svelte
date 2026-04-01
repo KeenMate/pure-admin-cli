@@ -50,9 +50,7 @@
 				bind:hidden={sidebarHidden}
 				bind:mobileVisible={sidebarMobileVisible}
 			>
-				<SidebarItem href="/" label="Dashboard">
-					{#snippet icon()}<i class="fa fa-home"></i>{/snippet}
-				</SidebarItem>
+				{{SIDEBAR_ITEMS}}
 			</Sidebar>
 
 			<LayoutContent>

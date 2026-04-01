@@ -11,11 +11,44 @@
     "@keenmate/svelte-pure-admin": "latest",
     "@keenmate/pure-admin-core": "latest"
   },
+  "pageTypes": {
+    "dashboard": {
+      "template": "pages/dashboard.svelte",
+      "route": "src/routes/+page.svelte",
+      "icon": "fa fa-home",
+      "defaultLabel": "Dashboard"
+    },
+    "list": {
+      "template": "pages/list.svelte",
+      "route": "src/routes/{{entity}}/+page.svelte",
+      "icon": "fa fa-list",
+      "defaultLabel": "{{entity}}"
+    },
+    "detail": {
+      "template": "pages/detail.svelte",
+      "route": "src/routes/{{entity}}/[id]/+page.svelte",
+      "icon": null
+    },
+    "master-detail": {
+      "template": "pages/master-detail.svelte",
+      "route": "src/routes/{{entity}}/+page.svelte",
+      "icon": "fa fa-table",
+      "defaultLabel": "{{entity}}"
+    },
+    "form": {
+      "template": "pages/form.svelte",
+      "route": "src/routes/{{entity}}/+page.svelte",
+      "icon": "fa fa-edit",
+      "defaultLabel": "{{entity}}"
+    }
+  },
+  "defaultPages": [
+    { "type": "dashboard", "label": "Dashboard" }
+  ],
   "steps": [
     { "action": "create", "path": "src/app.html", "template": "app.html" },
     { "action": "create", "path": "src/app.css", "template": "app.css" },
     { "action": "create", "path": "src/routes/+layout.svelte", "template": "layout.svelte" },
-    { "action": "create", "path": "src/routes/+page.svelte", "template": "page.svelte" },
     { "action": "create", "path": "pureadmin.json", "template": "pureadmin.json" },
     { "action": "create", "path": "Makefile", "template": "Makefile" },
     { "action": "json-merge", "path": "package.json", "data": {
