@@ -8,29 +8,36 @@
 		Sidebar,
 		SidebarItem,
 		Main,
-		Footer,
-		SettingsPanel{{#PROFILE_PANEL}},
+		Footer{{#SETTINGS_PANEL}},
+		SettingsPanel{{/SETTINGS_PANEL}}{{#PROFILE_PANEL}},
 		ProfilePanel{{/PROFILE_PANEL}}
 	} from '@keenmate/svelte-pure-admin';
-	import type { ThemeOption } from '@keenmate/svelte-pure-admin';
-	import '../app.css';
+	{{#SETTINGS_PANEL}}import type { ThemeOption } from '@keenmate/svelte-pure-admin';
+	{{/SETTINGS_PANEL}}import '../app.css';
 
-	const availableThemes: ThemeOption[] = [
+	{{#SETTINGS_PANEL}}const availableThemes: ThemeOption[] = [
 		{{THEME_OPTIONS}}
 	];
+	{{/SETTINGS_PANEL}}
 
 	let { children } = $props();
 
-	let sidebarHidden = $state(false);
 	let sidebarMobileVisible = $state(false);
+	let sidebarUserToggled = $state(false);
 
 	function toggleSidebar() {
 		if (typeof document !== 'undefined') {
 			const isMobile = window.innerWidth <= 768;
 			if (isMobile) {
 				sidebarMobileVisible = !sidebarMobileVisible;
+				sidebarUserToggled = false;
+				document.body.classList.toggle('sidebar-visible', sidebarMobileVisible);
 			} else {
-				sidebarHidden = !sidebarHidden;
+				const hidden = document.body.classList.toggle('sidebar-hidden');
+				sidebarUserToggled = !sidebarUserToggled;
+				sidebarMobileVisible = false;
+				document.body.classList.remove('sidebar-visible');
+				localStorage.setItem('sidebar-hidden', String(hidden));
 			}
 		}
 	}
@@ -43,13 +50,10 @@
 	}
 }}>
 	<Layout>
-		<Navbar onburgerclick={toggleSidebar} showBurger={true} />
+		<Navbar onburgerclick={toggleSidebar} showBurger={true} burgerActive={sidebarMobileVisible || sidebarUserToggled} />
 
 		<LayoutInner>
-			<Sidebar
-				bind:hidden={sidebarHidden}
-				bind:mobileVisible={sidebarMobileVisible}
-			>
+			<Sidebar>
 				{{SIDEBAR_ITEMS}}
 			</Sidebar>
 
@@ -62,10 +66,10 @@
 			</LayoutContent>
 		</LayoutInner>
 
-		<SettingsPanel
+		{{#SETTINGS_PANEL}}<SettingsPanel
 			themes={availableThemes}
 			defaultTheme="{{DEFAULT_THEME}}"
-		/>
+		/>{{/SETTINGS_PANEL}}
 		{{#PROFILE_PANEL}}<ProfilePanel />{{/PROFILE_PANEL}}
 	</Layout>
 </PureAdminProvider>

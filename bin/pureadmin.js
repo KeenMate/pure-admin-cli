@@ -664,6 +664,7 @@ async function cmdCreate(appName, opts) {
   const logo = resolve('logo') || '';
   const includeFontAwesome = opts.fontAwesome || resolve('fontAwesome') || false;
   const includeProfilePanel = !opts.noProfilePanel && (resolve('profilePanel') !== false);
+  const includeSettingsPanel = opts.settingsPanel || resolve('settingsPanel') || false;
   const includeMakefile = !opts.noMakefile && (resolve('makefile') !== false);
 
   console.log();
@@ -690,6 +691,8 @@ async function cmdCreate(appName, opts) {
       includeFontAwesome ? '$1' : '');
     result = result.replace(/\{\{#PROFILE_PANEL\}\}([\s\S]*?)\{\{\/PROFILE_PANEL\}\}/g,
       includeProfilePanel ? '$1' : '');
+    result = result.replace(/\{\{#SETTINGS_PANEL\}\}([\s\S]*?)\{\{\/SETTINGS_PANEL\}\}/g,
+      includeSettingsPanel ? '$1' : '');
     // These are set later after theme data is fetched
     if (result.includes('{{THEME_OPTIONS}}') && substituteVars._themeOptions) {
       result = result.split('{{THEME_OPTIONS}}').join(substituteVars._themeOptions);
@@ -1908,6 +1911,8 @@ async function main() {
       opts.fontAwesome = true;
     } else if (rest[i] === '--no-profile-panel') {
       opts.noProfilePanel = true;
+    } else if (rest[i] === '--settings-panel') {
+      opts.settingsPanel = true;
     } else if (rest[i] === '--offline') {
       opts.offline = true;
     } else if (rest[i] === '--no-build') {
@@ -1922,7 +1927,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --font-awesome, --no-profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --font-awesome, --settings-panel, --no-profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
