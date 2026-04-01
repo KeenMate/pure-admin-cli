@@ -24,6 +24,7 @@
 
 	let sidebarMobileVisible = $state(false);
 	let sidebarUserToggled = $state(false);
+	{{#PROFILE_PANEL}}let showProfilePanel = $state(false);{{/PROFILE_PANEL}}
 
 	function toggleSidebar() {
 		if (typeof document !== 'undefined') {
@@ -50,7 +51,14 @@
 	}
 }}>
 	<Layout>
-		<Navbar onburgerclick={toggleSidebar} showBurger={true} burgerActive={sidebarMobileVisible || sidebarUserToggled} />
+		<Navbar onburgerclick={toggleSidebar} showBurger={true} burgerActive={sidebarMobileVisible || sidebarUserToggled}>
+			{{#PROFILE_PANEL}}{#snippet profile()}
+				<button class="pa-header__profile-btn" onclick={() => showProfilePanel = !showProfilePanel} aria-label="User Profile">
+					<span class="pa-btn__icon">👤</span>
+					<span class="pa-header__profile-name">User</span>
+				</button>
+			{/snippet}{{/PROFILE_PANEL}}
+		</Navbar>
 
 		<LayoutInner>
 			<Sidebar>
@@ -70,6 +78,6 @@
 			themes={availableThemes}
 			defaultTheme="{{DEFAULT_THEME}}"
 		/>{{/SETTINGS_PANEL}}
-		{{#PROFILE_PANEL}}<ProfilePanel />{{/PROFILE_PANEL}}
+		{{#PROFILE_PANEL}}<ProfilePanel bind:show={showProfilePanel} name="User" email="user@example.com" role="User" />{{/PROFILE_PANEL}}
 	</Layout>
 </PureAdminProvider>
