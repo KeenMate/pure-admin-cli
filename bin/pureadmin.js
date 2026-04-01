@@ -646,7 +646,7 @@ async function cmdCreate(appName, opts) {
   const template = opts.template || 'sveltekit';
   const themeIds = (opts.themes || 'corporate,audi,dark').split(',').map(s => s.trim());
   const defaultTheme = opts.theme || themeIds[0];
-  const displayName = appName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  const displayName = opts.name || appName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
 
   console.log();
   console.log(bold(`  Creating ${displayName}`) + dim(` (${template} + Pure Admin)`));
@@ -1618,8 +1618,10 @@ function usage(error) {
 
   ${bold('Create options:')}
     --template <name>           App template (default: sveltekit)
+    --name <name>               Display name (default: derived from directory name)
     --themes <list>             Comma-separated theme slugs (default: corporate,audi,dark)
     --theme <slug>              Default theme (default: first in --themes)
+    --verbose                   Show template sources, file sizes, and debug info
 
   ${bold('Themes options:')}
     --offline                   Commit theme files to repo (for builds without network)
@@ -1804,6 +1806,8 @@ async function main() {
       opts.output = rest[++i];
     } else if (rest[i] === '--template' && rest[i + 1]) {
       opts.template = rest[++i];
+    } else if (rest[i] === '--name' && rest[i + 1]) {
+      opts.name = rest[++i];
     } else if (rest[i] === '--themes' && rest[i + 1]) {
       opts.themes = rest[++i];
     } else if (rest[i] === '--theme' && rest[i + 1]) {
@@ -1820,7 +1824,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
