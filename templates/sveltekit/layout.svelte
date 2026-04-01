@@ -11,12 +11,9 @@
 		Footer,
 		SettingsPanel
 	} from '@keenmate/svelte-pure-admin';
-	import type { PureAdminConfig, ThemeOption } from '@keenmate/svelte-pure-admin';
+	import type { ThemeOption } from '@keenmate/svelte-pure-admin';
 	import '../app.css';
 
-	// Theme CSS files are served from static/themes/ to avoid Vite's CSS
-	// injection side-effects that occur with ?url imports of CSS-only packages.
-	// The correct theme is loaded via a blocking <link> in app.html (no FOUC).
 	const availableThemes: ThemeOption[] = [
 		{{THEME_OPTIONS}}
 	];
@@ -36,22 +33,13 @@
 			}
 		}
 	}
-
-	const config: PureAdminConfig = {
-		appName: '{{APP_DISPLAY_NAME}}',
-		copyright: {
-			text: '{{APP_DISPLAY_NAME}}',
-			year: new Date().getFullYear()
-		}
-	};
 </script>
 
-<PureAdminProvider {config}>
+<PureAdminProvider config={{
+	app: { name: '{{APP_DISPLAY_NAME}}' }
+}}>
 	<Layout>
-		<Navbar
-			appName={config.appName}
-			onburgerclick={toggleSidebar}
-		/>
+		<Navbar onburgerclick={toggleSidebar} />
 
 		<LayoutInner>
 			<Sidebar
@@ -66,9 +54,7 @@
 					{@render children()}
 				</Main>
 
-				<Footer
-					copyright={config.copyright}
-				/>
+				<Footer />
 			</LayoutContent>
 		</LayoutInner>
 
