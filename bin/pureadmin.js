@@ -785,7 +785,7 @@ async function cmdCreate(appName, opts) {
       const icon = p.icon || pt.icon || 'fa fa-circle';
       const entity = p.entity || p.type;
       const href = p.type === 'dashboard' ? '/' : `/${entity}`;
-      return `\t\t\t\t<SidebarItem href="${href}" label="${label}">\n\t\t\t\t\t{#snippet icon()}<i class="${icon}"></i>{/snippet}\n\t\t\t\t</SidebarItem>`;
+      return `\t\t\t\t<SidebarItem href="${href}" labelText="${label}">\n\t\t\t\t\t{#snippet icon()}<i class="${icon}"></i>{/snippet}\n\t\t\t\t</SidebarItem>`;
     })
     .join('\n');
 
