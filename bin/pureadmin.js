@@ -643,20 +643,33 @@ async function cmdInit(id, name) {
 async function cmdCreate(appName, opts) {
   if (!appName) return usage('create requires an app name (e.g. my-app)');
 
-  // Read defaults from config (e.g. ~/.pureadmin.json)
-  const defaults = config.create || {};
+  // Resolve company + preset profiles from config
+  const company = opts.company ? (config.companies || {})[opts.company] : null;
+  const preset = opts.preset ? (config.presets || {})[opts.preset] : null;
+  const fallback = config.create || {};
 
-  const template = opts.template || defaults.template || 'sveltekit';
-  const themeIds = (opts.themes || defaults.defaultThemes || 'corporate,audi,dark').split(',').map(s => s.trim());
-  const defaultTheme = opts.theme || defaults.defaultTheme || themeIds[0];
-  const displayName = opts.name || defaults.company || appName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
-  const copyright = defaults.copyright || displayName;
-  const logo = defaults.logo || '';
-  const includeFontAwesome = opts.fontAwesome || defaults.fontAwesome || false;
-  const includeProfilePanel = !opts.noProfilePanel && (defaults.profilePanel !== false);
+  // Merge: CLI flags > preset > company > config.create defaults
+  function resolve(key, cliVal) {
+    if (cliVal !== undefined) return cliVal;
+    if (preset && preset[key] !== undefined) return preset[key];
+    if (company && company[key] !== undefined) return company[key];
+    return fallback[key];
+  }
+
+  const template = resolve('template', opts.template) || 'sveltekit';
+  const themeIds = (resolve('themes', opts.themes) || resolve('defaultThemes') || 'corporate,audi,dark').split(',').map(s => s.trim());
+  const defaultTheme = resolve('defaultTheme', opts.theme) || themeIds[0];
+  const displayName = opts.name || (company?.name) || appName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  const copyright = resolve('copyright') || displayName;
+  const logo = resolve('logo') || '';
+  const includeFontAwesome = opts.fontAwesome || resolve('fontAwesome') || false;
+  const includeProfilePanel = !opts.noProfilePanel && (resolve('profilePanel') !== false);
+  const includeMakefile = !opts.noMakefile && (resolve('makefile') !== false);
 
   console.log();
   console.log(bold(`  Creating ${displayName}`) + dim(` (${template} + Pure Admin)`));
+  if (opts.company) console.log(`  ${dim('Company:')} ${company?.name || opts.company}`);
+  if (opts.preset) console.log(`  ${dim('Preset:')} ${opts.preset}`);
   console.log(`  ${dim('Themes:')} ${themeIds.join(', ')} ${dim(`(default: ${defaultTheme})`)}`);
   if (includeFontAwesome) console.log(`  ${dim('Icons:')} FontAwesome (CDN)`);
   console.log();
@@ -753,7 +766,7 @@ async function cmdCreate(appName, opts) {
     { action: 'create', path: 'src/routes/+layout.svelte', template: 'layout.svelte' },
     { action: 'create', path: 'src/routes/+page.svelte', template: 'page.svelte' },
     { action: 'create', path: 'pureadmin.json', template: 'pureadmin.json' },
-    ...(!opts.noMakefile ? [{ action: 'create', path: 'Makefile', template: 'Makefile' }] : []),
+    ...(includeMakefile ? [{ action: 'create', path: 'Makefile', template: 'Makefile' }] : []),
   ];
 
   // Pipeline: fetch all templates, then substitute, then write
@@ -1634,9 +1647,14 @@ function usage(error) {
 
   ${bold('Create options:')}
     --template <name>           App template (default: sveltekit)
-    --name <name>               Display name (default: derived from directory name)
+    --name <name>               Display name (default: derived from directory or company name)
+    --company <id>              Company profile from ~/.pureadmin.json
+    --preset <id>               Technology preset from ~/.pureadmin.json
     --themes <list>             Comma-separated theme slugs (default: corporate,audi,dark)
     --theme <slug>              Default theme (default: first in --themes)
+    --font-awesome              Include FontAwesome CDN
+    --no-profile-panel          Skip ProfilePanel component
+    --no-makefile               Skip Makefile generation
     --verbose                   Show template sources, file sizes, and debug info
 
   ${bold('Themes options:')}
@@ -1828,6 +1846,10 @@ async function main() {
       opts.themes = rest[++i];
     } else if (rest[i] === '--theme' && rest[i + 1]) {
       opts.theme = rest[++i];
+    } else if (rest[i] === '--company' && rest[i + 1]) {
+      opts.company = rest[++i];
+    } else if (rest[i] === '--preset' && rest[i + 1]) {
+      opts.preset = rest[++i];
     } else if (rest[i] === '--font-awesome') {
       opts.fontAwesome = true;
     } else if (rest[i] === '--no-profile-panel') {
@@ -1846,7 +1868,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --font-awesome, --no-profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --font-awesome, --no-profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
