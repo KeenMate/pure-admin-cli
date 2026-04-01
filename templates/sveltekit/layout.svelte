@@ -43,7 +43,7 @@
 	}
 }}>
 	<Layout>
-		<Navbar onburgerclick={toggleSidebar} />
+		<Navbar onburgerclick={toggleSidebar} showBurger={true} />
 
 		<LayoutInner>
 			<Sidebar
