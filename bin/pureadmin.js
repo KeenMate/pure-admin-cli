@@ -744,45 +744,106 @@ async function cmdCreate(appName, opts) {
   const localTemplatesDir = path.join(__dirname, '..', 'templates', template);
 
   const verbose = opts.verbose || false;
+
+  // Fetch template content from server or local fallback
+  async function fetchTemplate(templateName) {
+    try {
+      const content = await fetchText(`/api/tools/templates/${template}/${templateName}`);
+      return { content, source: 'server' };
+    } catch {
+      const localPath = path.join(localTemplatesDir, templateName);
+      if (fs.existsSync(localPath)) {
+        return { content: fs.readFileSync(localPath, 'utf-8'), source: 'local' };
+      }
+      return null;
+    }
+  }
+
   console.log(`  Applying ${steps.length} template steps...`);
   for (const step of steps) {
     const destPath = path.join(appDir, step.path);
-    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    const action = step.action || 'create';
 
-    let content;
-    let source = '';
-
-    // Step 1: Try fetching from server
-    try {
-      content = await fetchText(`/api/tools/templates/${template}/${step.template}`);
-      source = 'server';
-    } catch {
-      // Step 2: Fall back to bundled local template
-      const localPath = path.join(localTemplatesDir, step.template);
-      if (fs.existsSync(localPath)) {
-        content = fs.readFileSync(localPath, 'utf-8');
-        source = 'local';
+    // --- delete action ---
+    if (action === 'delete') {
+      if (fs.existsSync(destPath)) {
+        fs.unlinkSync(destPath);
+        console.log(`    ${green('-')} ${step.path} ${verbose ? dim('[deleted]') : ''}`);
+      } else if (verbose) {
+        console.log(`    ${dim('-')} ${step.path} ${dim('[already absent]')}`);
       }
+      continue;
     }
 
-    if (!content) {
+    // --- json-merge action ---
+    if (action === 'json-merge') {
+      let mergeData;
+      if (step.template) {
+        const tmpl = await fetchTemplate(step.template);
+        if (tmpl) mergeData = JSON.parse(substituteVars(tmpl.content));
+      } else if (step.data) {
+        mergeData = JSON.parse(substituteVars(JSON.stringify(step.data)));
+      }
+      if (mergeData && fs.existsSync(destPath)) {
+        const existing = JSON.parse(fs.readFileSync(destPath, 'utf-8'));
+        const merged = deepMerge(existing, mergeData);
+        fs.writeFileSync(destPath, JSON.stringify(merged, null, 2) + '\n');
+        console.log(`    ${green('~')} ${step.path} ${verbose ? dim(`[json-merge, ${Object.keys(mergeData).length} keys]`) : ''}`);
+      } else if (mergeData) {
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.writeFileSync(destPath, JSON.stringify(mergeData, null, 2) + '\n');
+        console.log(`    ${green('+')} ${step.path} ${verbose ? dim('[json-merge, new file]') : ''}`);
+      }
+      continue;
+    }
+
+    // --- patch action (find/replace in existing file) ---
+    if (action === 'patch') {
+      if (fs.existsSync(destPath) && step.find && step.replace != null) {
+        let fileContent = fs.readFileSync(destPath, 'utf-8');
+        const find = substituteVars(step.find);
+        const replace = substituteVars(step.replace);
+        if (fileContent.includes(find)) {
+          fileContent = fileContent.replace(find, replace);
+          fs.writeFileSync(destPath, fileContent);
+          console.log(`    ${green('~')} ${step.path} ${verbose ? dim('[patch]') : ''}`);
+        } else if (verbose) {
+          console.log(`    ${yellow('!')} ${step.path} ${dim('[patch target not found]')}`);
+        }
+      }
+      continue;
+    }
+
+    // --- append / prepend actions ---
+    if (action === 'append' || action === 'prepend') {
+      const tmpl = step.template ? await fetchTemplate(step.template) : null;
+      const text = tmpl ? substituteVars(tmpl.content) : (step.text ? substituteVars(step.text) : null);
+      if (text && fs.existsSync(destPath)) {
+        let fileContent = fs.readFileSync(destPath, 'utf-8');
+        fileContent = action === 'append' ? fileContent + text : text + fileContent;
+        fs.writeFileSync(destPath, fileContent);
+        console.log(`    ${green('~')} ${step.path} ${verbose ? dim(`[${action}]`) : ''}`);
+      }
+      continue;
+    }
+
+    // --- create action (default) ---
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+
+    const tmpl = step.template ? await fetchTemplate(step.template) : null;
+    if (!tmpl) {
       console.log(`    ${yellow('!')} ${step.path} ${dim('(template not available)')}`);
       continue;
     }
 
-    const rawSize = content.length;
-
-    // Step 3: Substitute variables
-    content = substituteVars(content);
-
-    // Step 4: Write file
+    let content = substituteVars(tmpl.content);
     fs.writeFileSync(destPath, content);
 
     if (verbose) {
       const sizeKB = (content.length / 1024).toFixed(1);
       const vars = (content.match(/\{\{[A-Z_]+\}\}/g) || []);
       const unreplaced = vars.length > 0 ? yellow(` ${vars.length} unreplaced var(s): ${vars.join(', ')}`) : '';
-      console.log(`    ${green('+')} ${step.path} ${dim(`[${source}, ${step.template}, ${sizeKB}KB]`)}${unreplaced}`);
+      console.log(`    ${green('+')} ${step.path} ${dim(`[${tmpl.source}, ${step.template}, ${sizeKB}KB]`)}${unreplaced}`);
     } else {
       console.log(`    ${green('+')} ${step.path}`);
     }
@@ -867,6 +928,19 @@ function saveProjectConfig(configPath, data) {
   const clean = { ...data };
   delete clean._configPath;
   fs.writeFileSync(configPath, JSON.stringify(clean, null, 2) + '\n');
+}
+
+function deepMerge(target, source) {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])
+        && target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
+      result[key] = deepMerge(target[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
 }
 
 function extractThemeZip(zipPath, destDir) {
