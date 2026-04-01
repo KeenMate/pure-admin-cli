@@ -654,13 +654,21 @@ async function cmdCreate(appName, opts) {
 
   console.log(`  Running SvelteKit scaffold...`);
   try {
-    execSync(`npm create svelte@latest ${appName} -- --template skeleton --types ts`, {
+    execSync(`npx sv create ${appName} --template minimal --types ts --no-add-ons --no-install`, {
       cwd: process.cwd(),
       stdio: 'inherit'
     });
   } catch {
-    console.error(`\n  ${bold('Scaffold failed.')} You can create the project manually and re-run.`);
-    process.exit(1);
+    // Fallback to legacy command
+    try {
+      execSync(`npm create svelte@latest ${appName} -- --template skeleton --types ts`, {
+        cwd: process.cwd(),
+        stdio: 'inherit'
+      });
+    } catch {
+      console.error(`\n  ${bold('Scaffold failed.')} Install sv globally: npm i -g sv, then retry.`);
+      process.exit(1);
+    }
   }
 
   const appDir = path.join(process.cwd(), appName);
