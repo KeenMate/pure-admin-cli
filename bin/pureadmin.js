@@ -663,7 +663,7 @@ async function cmdCreate(appName, opts) {
   const copyright = resolve('copyright') || displayName;
   const logo = resolve('logo') || '';
   const includeFontAwesome = opts.fontAwesome || resolve('fontAwesome') || false;
-  const includeProfilePanel = !opts.noProfilePanel && (resolve('profilePanel') !== false);
+  const includeProfilePanel = opts.profilePanel || resolve('profilePanel') || false;
   const includeSettingsPanel = opts.settingsPanel || resolve('settingsPanel') || false;
   const includeMakefile = !opts.noMakefile && (resolve('makefile') !== false);
 
@@ -1710,7 +1710,8 @@ function usage(error) {
     --themes <list>             Comma-separated theme slugs (default: corporate,audi,dark)
     --theme <slug>              Default theme (default: first in --themes)
     --font-awesome              Include FontAwesome CDN
-    --no-profile-panel          Skip ProfilePanel component
+    --profile-panel             Include ProfilePanel component
+    --settings-panel            Include SettingsPanel (theme switcher)
     --no-makefile               Skip Makefile generation
     --verbose                   Show template sources, file sizes, and debug info
 
@@ -1909,8 +1910,8 @@ async function main() {
       opts.preset = rest[++i];
     } else if (rest[i] === '--font-awesome') {
       opts.fontAwesome = true;
-    } else if (rest[i] === '--no-profile-panel') {
-      opts.noProfilePanel = true;
+    } else if (rest[i] === '--profile-panel') {
+      opts.profilePanel = true;
     } else if (rest[i] === '--settings-panel') {
       opts.settingsPanel = true;
     } else if (rest[i] === '--offline') {
@@ -1927,7 +1928,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --font-awesome, --settings-panel, --no-profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --font-awesome, --settings-panel, --profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
