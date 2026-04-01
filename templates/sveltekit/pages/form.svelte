@@ -7,7 +7,8 @@
 		status: 'active'
 	});
 
-	function handleSubmit() {
+	function handleSubmit(e: Event) {
+		e.preventDefault();
 		console.log('Submit:', formData);
 		alert('Form submitted (demo)');
 	}
@@ -16,7 +17,7 @@
 <Heading level={1}>{{PAGE_LABEL}}</Heading>
 
 <Card titleText="{{PAGE_LABEL}}">
-	<form onsubmit|preventDefault={handleSubmit}>
+	<form onsubmit={handleSubmit}>
 		<div class="pa-form-group">
 			<label class="pa-form-label" for="name">Name</label>
 			<input type="text" class="pa-input" id="name" bind:value={formData.name} placeholder="Enter name..." />
