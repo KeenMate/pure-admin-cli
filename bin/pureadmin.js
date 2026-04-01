@@ -738,6 +738,7 @@ async function cmdCreate(appName, opts) {
     { action: 'create', path: 'src/routes/+layout.svelte', template: 'layout.svelte' },
     { action: 'create', path: 'src/routes/+page.svelte', template: 'page.svelte' },
     { action: 'create', path: 'pureadmin.json', template: 'pureadmin.json' },
+    ...(!opts.noMakefile ? [{ action: 'create', path: 'Makefile', template: 'Makefile' }] : []),
   ];
 
   // Pipeline: fetch all templates, then substitute, then write
@@ -1816,6 +1817,8 @@ async function main() {
       opts.offline = true;
     } else if (rest[i] === '--no-build') {
       opts.noBuild = true;
+    } else if (rest[i] === '--no-makefile') {
+      opts.noMakefile = true;
     } else if (rest[i] === '--verbose' || rest[i] === '-v') {
       opts.verbose = true;
     } else if (rest[i] === '--api-key' && rest[i + 1]) {
@@ -1824,7 +1827,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --offline, --no-build, --no-makefile, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);

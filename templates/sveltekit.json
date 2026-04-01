@@ -17,6 +17,7 @@
     { "action": "create", "path": "src/routes/+layout.svelte", "template": "layout.svelte" },
     { "action": "create", "path": "src/routes/+page.svelte", "template": "page.svelte" },
     { "action": "create", "path": "pureadmin.json", "template": "pureadmin.json" },
+    { "action": "create", "path": "Makefile", "template": "Makefile" },
     { "action": "json-merge", "path": "package.json", "data": {
       "scripts": {
         "themes": "pureadmin themes",
