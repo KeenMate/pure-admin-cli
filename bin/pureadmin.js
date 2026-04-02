@@ -666,6 +666,7 @@ async function cmdCreate(appName, opts) {
   const includeProfilePanel = opts.profilePanel || resolve('profilePanel') || false;
   const includeSettingsPanel = opts.settingsPanel || resolve('settingsPanel') || false;
   const includeMakefile = !opts.noMakefile && (resolve('makefile') !== false);
+  const verbose = opts.verbose || false;
 
   console.log();
   console.log(bold(`  Creating ${displayName}`) + dim(` (${template} + Pure Admin)`));
@@ -731,24 +732,43 @@ async function cmdCreate(appName, opts) {
     if (opts.verbose) console.log(dim(`    fallback: bundled templates from ${path.join(__dirname, '..', 'templates', template)}`));
   }
 
-  // 2. Scaffold the framework project
-  const scaffoldCmd = recipe?.scaffold?.command || `npx sv create {{APP_NAME}} --template minimal --types ts --no-add-ons --no-install`;
-  const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts`;
+  const appDir = path.join(process.cwd(), appName);
 
-  console.log(`  Running ${template} scaffold...`);
-  if (opts.verbose) console.log(dim(`    command: ${substituteVars(scaffoldCmd)}`));
-  try {
-    execSync(substituteVars(scaffoldCmd), { cwd: process.cwd(), stdio: 'inherit' });
-  } catch {
-    try {
-      execSync(substituteVars(scaffoldFallback), { cwd: process.cwd(), stdio: 'inherit' });
-    } catch {
-      console.error(`\n  ${bold('Scaffold failed.')} Create the project manually and re-run.`);
+  // 2. Scaffold or copy template
+  if (opts.templatePath) {
+    // Local template path — copy entire directory (skip node_modules, .svelte-kit, dist, .git)
+    const srcDir = path.resolve(opts.templatePath);
+    if (!fs.existsSync(srcDir)) {
+      console.error(`\n  ${bold('Error:')} template path not found: ${srcDir}`);
       process.exit(1);
     }
-  }
+    console.log(`  Copying template from ${dim(srcDir)}...`);
+    copyDirSync(srcDir, appDir, ['node_modules', '.svelte-kit', 'dist', '.git', 'build']);
 
-  const appDir = path.join(process.cwd(), appName);
+    // Read template manifest if present
+    const tmplManifestPath = path.join(appDir, 'template.json');
+    if (fs.existsSync(tmplManifestPath) && !recipe) {
+      try { recipe = JSON.parse(fs.readFileSync(tmplManifestPath, 'utf-8')); } catch {}
+    }
+    console.log(green(`  Template copied (${recipe?.displayName || template})`));
+  } else {
+    // Scaffold from scratch
+    const scaffoldCmd = recipe?.scaffold?.command || `npx sv create {{APP_NAME}} --template minimal --types ts --no-add-ons --no-install`;
+    const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts`;
+
+    console.log(`  Running ${template} scaffold...`);
+    if (opts.verbose) console.log(dim(`    command: ${substituteVars(scaffoldCmd)}`));
+    try {
+      execSync(substituteVars(scaffoldCmd), { cwd: process.cwd(), stdio: 'inherit' });
+    } catch {
+      try {
+        execSync(substituteVars(scaffoldFallback), { cwd: process.cwd(), stdio: 'inherit' });
+      } catch {
+        console.error(`\n  ${bold('Scaffold failed.')} Create the project manually and re-run.`);
+        process.exit(1);
+      }
+    }
+  }
 
   // 3. Fetch theme data for template variables
   process.stdout.write(`  Fetching theme data... `);
@@ -809,8 +829,32 @@ async function cmdCreate(appName, opts) {
     };
   });
 
-  // 6. Execute recipe steps + page steps
-  const steps = [
+  // 6. If using --template-path, substitute placeholders in all copied files
+  if (opts.templatePath) {
+    console.log(`  Substituting placeholders...`);
+    const exts = ['.svelte', '.html', '.css', '.ts', '.js', '.json', '.md'];
+    function walkAndSubstitute(dir) {
+      for (const entry of fs.readdirSync(dir)) {
+        if (['node_modules', '.svelte-kit', '.git'].includes(entry)) continue;
+        const p = path.join(dir, entry);
+        const stat = fs.statSync(p);
+        if (stat.isDirectory()) {
+          walkAndSubstitute(p);
+        } else if (exts.some(e => entry.endsWith(e))) {
+          let content = fs.readFileSync(p, 'utf-8');
+          const replaced = substituteVars(content);
+          if (replaced !== content) {
+            fs.writeFileSync(p, replaced);
+            if (verbose) console.log(`    ${green('~')} ${path.relative(appDir, p)}`);
+          }
+        }
+      }
+    }
+    walkAndSubstitute(appDir);
+  }
+
+  // 7. Execute recipe steps + page steps
+  const allSteps = [
     ...(recipe?.steps || [
       { action: 'create', path: 'src/app.html', template: 'app.html' },
       { action: 'create', path: 'src/app.css', template: 'app.css' },
@@ -821,11 +865,13 @@ async function cmdCreate(appName, opts) {
     ...(includeMakefile ? [{ action: 'create', path: 'Makefile', template: 'Makefile' }] : []),
     ...pageSteps,
   ];
+  // When using --template-path, skip 'create' steps (files already copied), keep json-merge and pages
+  const steps = opts.templatePath
+    ? allSteps.filter(s => s.action !== 'create' || s._pageLabel)  // keep page creates + non-create steps
+    : allSteps;
 
   // Pipeline: fetch all templates, then substitute, then write
   const localTemplatesDir = path.join(__dirname, '..', 'templates', template);
-
-  const verbose = opts.verbose || false;
 
   // Fetch template content from server or local fallback
   async function fetchTemplate(templateName) {
@@ -1080,32 +1126,27 @@ function processTemplatePoints(appDir, enabledFlags, verbose) {
 
   if (verbose) console.log(dim(`    removing ${pointsToRemove.size} point(s) for disabled features`));
 
-  // Group points by file (from helper or by scanning)
-  let helper = {};
-  const helperPath = path.join(appDir, 'template.helper.js');
-  if (fs.existsSync(helperPath)) {
-    helper = require(helperPath);
-  }
-
   // Build marker patterns
   const htmlStart = (id) => `<!-- data-pa="${id}" -->`;
   const htmlEnd = (id) => `<!-- /data-pa="${id}" -->`;
   const jsStart = (id) => `// data-pa="${id}"`;
   const jsEnd = (id) => `// /data-pa="${id}"`;
 
-  // Find all files that may contain points
+  // Scan all source files for data-pa markers
   const filesToScan = new Set();
-  const pointDefs = helper.points || {};
-  for (const pointId of pointsToRemove) {
-    if (pointDefs[pointId]?.file) {
-      filesToScan.add(pointDefs[pointId].file);
+  const scanExts = ['.svelte', '.html', '.css', '.ts', '.js'];
+  function findFiles(dir) {
+    for (const entry of fs.readdirSync(dir)) {
+      if (['node_modules', '.svelte-kit', '.git', 'build', 'dist'].includes(entry)) continue;
+      const p = path.join(dir, entry);
+      if (fs.statSync(p).isDirectory()) findFiles(p);
+      else if (scanExts.some(e => entry.endsWith(e))) {
+        const content = fs.readFileSync(p, 'utf-8');
+        if (content.includes('data-pa=')) filesToScan.add(path.relative(appDir, p));
+      }
     }
   }
-  // Also scan common files
-  filesToScan.add('src/app.html');
-  filesToScan.add('src/routes/+layout.svelte');
-  filesToScan.add('index.html');
-  filesToScan.add('src/App.svelte');
+  findFiles(appDir);
 
   for (const relPath of filesToScan) {
     const filePath = path.join(appDir, relPath);
@@ -1145,13 +1186,29 @@ function processTemplatePoints(appDir, enabledFlags, verbose) {
       // Clean up empty lines left behind
       content = content.replace(/\n{3,}/g, '\n\n');
       fs.writeFileSync(filePath, content);
-      if (verbose) console.log(`    ${green('~')} ${relPath} ${dim(`(${[...pointsToRemove].filter(p => (pointDefs[p]?.file || '') === relPath || !pointDefs[p]?.file).length} points removed)`)}`);
+      if (verbose) console.log(`    ${green('~')} ${relPath} ${dim('(points removed)')}`);
     }
   }
 
   // Clean up manifest and helper from the generated app
   fs.unlinkSync(manifestPath);
-  if (fs.existsSync(helperPath)) fs.unlinkSync(helperPath);
+  const helperFile = path.join(appDir, 'template.helper.js');
+  if (fs.existsSync(helperFile)) fs.unlinkSync(helperFile);
+}
+
+function copyDirSync(src, dest, exclude = []) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src)) {
+    if (exclude.includes(entry)) continue;
+    const srcPath = path.join(src, entry);
+    const destPath = path.join(dest, entry);
+    const stat = fs.statSync(srcPath);
+    if (stat.isDirectory()) {
+      copyDirSync(srcPath, destPath, exclude);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
 }
 
 function deepMerge(target, source) {
@@ -2036,6 +2093,8 @@ async function main() {
       opts.output = rest[++i];
     } else if (rest[i] === '--template' && rest[i + 1]) {
       opts.template = rest[++i];
+    } else if (rest[i] === '--template-path' && rest[i + 1]) {
+      opts.templatePath = rest[++i];
     } else if (rest[i] === '--name' && rest[i + 1]) {
       opts.name = rest[++i];
     } else if (rest[i] === '--themes' && rest[i + 1]) {
@@ -2066,7 +2125,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --font-awesome, --settings-panel, --profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --template, --template-path, --font-awesome, --settings-panel, --profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);
