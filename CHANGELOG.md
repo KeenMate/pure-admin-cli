@@ -1,29 +1,32 @@
 # Changelog
 
-## 1.0.0-rc04 (2026-04-01)
+## 1.0.0-rc04 (2026-04-02)
 
 ### Added
-- **Recipe system for `create`** — templates fetched from API (`/api/tools/templates/:framework/:file`), bundled locally as fallback. No more hardcoded template strings in CLI.
-- **6 recipe step actions** — `create`, `patch`, `append`, `prepend`, `delete`, `json-merge` for flexible project scaffolding
-- **Page generators** — recipe defines `pageTypes` (dashboard, list, detail, master-detail, form). Presets define which pages to scaffold. Auto-generates SvelteKit routes + sidebar items.
-- **Company/preset profiles** — `--company keenmate --preset full` reads from `~/.pureadmin.json`. Companies define branding (name, copyright, themes), presets define technology choices (icons, pages, features).
-- **`--name`** — custom display name for created apps
-- **`--font-awesome`** — include FontAwesome CDN in `app.html`
-- **`--no-profile-panel`** — skip ProfilePanel component
-- **`--no-makefile`** — skip Makefile generation
-- **`--verbose`** — show template sources (server/local), file sizes, unreplaced variables
+- **Template manifest system** — templates self-describe via `template.json` with features, placeholders, and dependencies. CLI reads manifest, resolves features, strips disabled `data-pa` blocks.
+- **`--template-path`** — use a local template repo instead of downloading: `pureadmin create my-app --template-path ../svelte-pure-admin-template`
+- **`--settings-panel`** — opt-in SettingsPanel (theme switcher)
+- **`--profile-panel`** — opt-in ProfilePanel (now opt-in, not opt-out)
+- **Recipe system for `create`** — templates fetched from API, bundled locally as fallback
+- **6 recipe step actions** — `create`, `patch`, `append`, `prepend`, `delete`, `json-merge`
+- **Page generators** — `pageTypes` (dashboard, list, detail, master-detail, form) with auto-generated routes + sidebar items
+- **Company/preset profiles** — `--company keenmate --preset full` from `~/.pureadmin.json`
+- **`--name`** — custom display name
+- **`--font-awesome`** — FontAwesome CDN
+- **`--no-makefile`** — skip Makefile
+- **`--verbose`** — debug output (template sources, file sizes, unreplaced vars)
 - **`--themes-dir`** — alias for `--dir`
-- **Makefile template** — generated apps include Makefile with setup, dev, build, preview, themes, clean
-- **`pureadmin.json` template** — generated apps use `pureadmin.json` for theme config instead of `copy-themes.js`
-- **Conditional template blocks** — `{{#FONT_AWESOME}}...{{/FONT_AWESOME}}`, `{{#PROFILE_PANEL}}...{{/PROFILE_PANEL}}`
-- **`fetchText()` helper** — fetch raw template content from API
 - **Unknown flag detection** — aborts with error and lists known flags
 
 ### Changed
-- **`create` command rewritten** — pipeline: fetch recipe → scaffold → fetch templates → substitute → write. Templates are the single source of truth on the server.
-- **`npx sv create`** — updated from deprecated `npm create svelte@latest`, with `--no-add-ons --no-install` for non-interactive scaffold
-- **Layout template** — uses `PureAdminProvider config.app` pattern, `SidebarItem` icon as Svelte snippet, `{{SIDEBAR_ITEMS}}` populated from page definitions
-- **Page template** — `Card` uses `titleText` prop (not `title` snippet)
+- **`create` rewritten as pipeline** — copy/scaffold → substitute placeholders → process template points → generate pages → install deps → download themes
+- **Placeholder syntax `__VAR__`** — replaces `{{VAR}}` which conflicts with Svelte's expression syntax
+- **`npx sv create`** — updated from deprecated `npm create svelte@latest`
+- **Both panels opt-in** — ProfilePanel and SettingsPanel excluded by default (no flash on load)
+- **Sidebar toggle** — uses `document.body.classList` like svelte-pure-admin demo (not Svelte bindings)
+- **SidebarItem `labelText`** — matches svelte-pure-admin API (was `label`)
+- **Card `titleText`** — matches svelte-pure-admin API (was `title`)
+- **Svelte 5 `onsubmit`** — no `|preventDefault` modifier syntax
 
 ---
 
