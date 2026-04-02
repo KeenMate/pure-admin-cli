@@ -935,7 +935,22 @@ async function cmdCreate(appName, opts) {
     }
   }
 
-  // 6. Install dependencies
+  // 6. Process template points — remove disabled feature blocks
+  const featureFlags = {
+    'navbar': true,
+    'sidebar': true,
+    'footer': true,
+    'profile-panel': includeProfilePanel,
+    'settings-panel': includeSettingsPanel,
+    'font-awesome': includeFontAwesome,
+    'floating-ui': true,
+    'page-loader': true,
+  };
+  console.log();
+  console.log(`  Processing template features...`);
+  processTemplatePoints(appDir, featureFlags, verbose);
+
+  // 7. Install dependencies
   const deps = recipe?.dependencies || {
     '@keenmate/svelte-pure-admin': 'latest',
     '@keenmate/pure-admin-core': 'latest'
@@ -1014,6 +1029,129 @@ function saveProjectConfig(configPath, data) {
   const clean = { ...data };
   delete clean._configPath;
   fs.writeFileSync(configPath, JSON.stringify(clean, null, 2) + '\n');
+}
+
+/**
+ * Process template points: remove blocks for disabled features.
+ * Reads template.json manifest from the app directory, resolves enabled features,
+ * then strips data-pa blocks for disabled features from all affected files.
+ */
+function processTemplatePoints(appDir, enabledFlags, verbose) {
+  const manifestPath = path.join(appDir, 'template.json');
+  if (!fs.existsSync(manifestPath)) return;
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  const features = manifest.features || {};
+
+  // Resolve which features are enabled
+  const enabled = {};
+  for (const [id, feat] of Object.entries(features)) {
+    enabled[id] = enabledFlags[id] !== undefined ? enabledFlags[id] : feat.default;
+  }
+
+  // Auto-enable dependencies
+  for (const [id, feat] of Object.entries(features)) {
+    if (enabled[id] && feat.requires) {
+      for (const dep of feat.requires) {
+        if (!enabled[dep]) {
+          enabled[dep] = true;
+          if (verbose) console.log(dim(`    auto-enabled "${dep}" (required by "${id}")`));
+        }
+      }
+    }
+  }
+
+  // Collect points to remove (from disabled features)
+  const pointsToRemove = new Set();
+  for (const [id, feat] of Object.entries(features)) {
+    if (!enabled[id] && feat.points) {
+      for (const p of feat.points) pointsToRemove.add(p);
+    }
+  }
+
+  if (pointsToRemove.size === 0) {
+    if (verbose) console.log(dim('    all features enabled, no points to remove'));
+    // Clean up manifest file
+    fs.unlinkSync(manifestPath);
+    const helperPath = path.join(appDir, 'template.helper.js');
+    if (fs.existsSync(helperPath)) fs.unlinkSync(helperPath);
+    return;
+  }
+
+  if (verbose) console.log(dim(`    removing ${pointsToRemove.size} point(s) for disabled features`));
+
+  // Group points by file (from helper or by scanning)
+  let helper = {};
+  const helperPath = path.join(appDir, 'template.helper.js');
+  if (fs.existsSync(helperPath)) {
+    helper = require(helperPath);
+  }
+
+  // Build marker patterns
+  const htmlStart = (id) => `<!-- data-pa="${id}" -->`;
+  const htmlEnd = (id) => `<!-- /data-pa="${id}" -->`;
+  const jsStart = (id) => `// data-pa="${id}"`;
+  const jsEnd = (id) => `// /data-pa="${id}"`;
+
+  // Find all files that may contain points
+  const filesToScan = new Set();
+  const pointDefs = helper.points || {};
+  for (const pointId of pointsToRemove) {
+    if (pointDefs[pointId]?.file) {
+      filesToScan.add(pointDefs[pointId].file);
+    }
+  }
+  // Also scan common files
+  filesToScan.add('src/app.html');
+  filesToScan.add('src/routes/+layout.svelte');
+  filesToScan.add('index.html');
+  filesToScan.add('src/App.svelte');
+
+  for (const relPath of filesToScan) {
+    const filePath = path.join(appDir, relPath);
+    if (!fs.existsSync(filePath)) continue;
+
+    let content = fs.readFileSync(filePath, 'utf-8');
+    let modified = false;
+
+    for (const pointId of pointsToRemove) {
+      // Try HTML-style markers
+      const hStart = htmlStart(pointId);
+      const hEnd = htmlEnd(pointId);
+      if (content.includes(hStart) && content.includes(hEnd)) {
+        const startIdx = content.indexOf(hStart);
+        const endIdx = content.indexOf(hEnd) + hEnd.length;
+        // Remove the entire block including surrounding whitespace/newline
+        const before = content.lastIndexOf('\n', startIdx - 1);
+        const after = content.indexOf('\n', endIdx);
+        content = content.slice(0, before >= 0 ? before : startIdx) + content.slice(after >= 0 ? after : endIdx);
+        modified = true;
+      }
+
+      // Try JS-style markers
+      const jStart = jsStart(pointId);
+      const jEnd = jsEnd(pointId);
+      if (content.includes(jStart) && content.includes(jEnd)) {
+        const startIdx = content.indexOf(jStart);
+        const endIdx = content.indexOf(jEnd) + jEnd.length;
+        const before = content.lastIndexOf('\n', startIdx - 1);
+        const after = content.indexOf('\n', endIdx);
+        content = content.slice(0, before >= 0 ? before : startIdx) + content.slice(after >= 0 ? after : endIdx);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      // Clean up empty lines left behind
+      content = content.replace(/\n{3,}/g, '\n\n');
+      fs.writeFileSync(filePath, content);
+      if (verbose) console.log(`    ${green('~')} ${relPath} ${dim(`(${[...pointsToRemove].filter(p => (pointDefs[p]?.file || '') === relPath || !pointDefs[p]?.file).length} points removed)`)}`);
+    }
+  }
+
+  // Clean up manifest and helper from the generated app
+  fs.unlinkSync(manifestPath);
+  if (fs.existsSync(helperPath)) fs.unlinkSync(helperPath);
 }
 
 function deepMerge(target, source) {
