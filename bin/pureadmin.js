@@ -678,35 +678,44 @@ async function cmdCreate(appName, opts) {
 
   const { execSync } = require('child_process');
 
-  // Helper: substitute {{VAR}} placeholders (available early for scaffold command)
+  // Helper: substitute placeholders — supports both {{VAR}} and __VAR__ syntax
   function substituteVars(text) {
     let result = text;
-    result = result.split('{{APP_NAME}}').join(appName);
-    result = result.split('{{APP_DISPLAY_NAME}}').join(displayName);
-    result = result.split('{{COPYRIGHT}}').join(copyright);
-    result = result.split('{{LOGO}}').join(logo);
-    result = result.split('{{DEFAULT_THEME}}').join(defaultTheme);
-    result = result.split('{{THEME_IDS_QUOTED}}').join(themeIds.map(id => `'${id}'`).join(', '));
-    // Conditional blocks: {{#FONT_AWESOME}}...{{/FONT_AWESOME}}
+
+    // Simple replacements (both formats)
+    function sub(name, value) {
+      result = result.split(`{{${name}}}`).join(value);
+      result = result.split(`__${name}__`).join(value);
+    }
+
+    sub('APP_NAME', displayName);
+    sub('APP_DISPLAY_NAME', displayName);
+    sub('APP_ID', appName);
+    sub('COPYRIGHT', copyright);
+    sub('LOGO', logo);
+    sub('DEFAULT_THEME', defaultTheme);
+    sub('THEME_IDS_QUOTED', themeIds.map(id => `'${id}'`).join(', '));
+    sub('USER_NAME', 'User');
+    sub('USER_EMAIL', 'user@example.com');
+    sub('USER_NAME_URL', 'User');
+
+    // Conditional blocks (old bundled template format only)
     result = result.replace(/\{\{#FONT_AWESOME\}\}([\s\S]*?)\{\{\/FONT_AWESOME\}\}/g,
       includeFontAwesome ? '$1' : '');
     result = result.replace(/\{\{#PROFILE_PANEL\}\}([\s\S]*?)\{\{\/PROFILE_PANEL\}\}/g,
       includeProfilePanel ? '$1' : '');
     result = result.replace(/\{\{#SETTINGS_PANEL\}\}([\s\S]*?)\{\{\/SETTINGS_PANEL\}\}/g,
       includeSettingsPanel ? '$1' : '');
-    // These are set later after theme data is fetched
-    if (result.includes('{{THEME_OPTIONS}}') && substituteVars._themeOptions) {
-      result = result.split('{{THEME_OPTIONS}}').join(substituteVars._themeOptions);
-    }
-    if (result.includes('{{THEMES_CONFIG}}') && substituteVars._themesConfig) {
-      result = result.split('{{THEMES_CONFIG}}').join(substituteVars._themesConfig);
-    }
-    if (result.includes('{{SIDEBAR_ITEMS}}') && substituteVars._sidebarItems) {
-      result = result.split('{{SIDEBAR_ITEMS}}').join(substituteVars._sidebarItems);
-    }
+
+    // Late-bound variables (set after theme data is fetched)
+    if (substituteVars._themeOptions) { sub('THEME_OPTIONS', substituteVars._themeOptions); }
+    if (substituteVars._themesConfig) { sub('THEMES_CONFIG', substituteVars._themesConfig); }
+    if (substituteVars._sidebarItems) { sub('SIDEBAR_ITEMS', substituteVars._sidebarItems); }
+
     // Per-page variables (set by caller)
-    if (substituteVars._pageLabel) result = result.split('{{PAGE_LABEL}}').join(substituteVars._pageLabel);
-    if (substituteVars._pageEntity) result = result.split('{{PAGE_ENTITY}}').join(substituteVars._pageEntity);
+    if (substituteVars._pageLabel) { sub('PAGE_LABEL', substituteVars._pageLabel); }
+    if (substituteVars._pageEntity) { sub('PAGE_ENTITY', substituteVars._pageEntity); }
+
     return result;
   }
 
