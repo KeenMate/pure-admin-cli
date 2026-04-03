@@ -778,7 +778,8 @@ async function cmdCreate(appName, opts) {
           // Merge template-specific fields into recipe
           if (tmplManifest.features) recipe.features = tmplManifest.features;
           if (tmplManifest.pageTypes) recipe.pageTypes = tmplManifest.pageTypes;
-          if (tmplManifest.displayName) recipe.displayName = tmplManifest.displayName;
+          if (tmplManifest.name) recipe.displayName = tmplManifest.name;
+          else if (tmplManifest.displayName) recipe.displayName = tmplManifest.displayName;
           if (tmplManifest.placeholders) recipe.placeholders = tmplManifest.placeholders;
           if (tmplManifest.instructions) recipe.instructions = tmplManifest.instructions;
         }
