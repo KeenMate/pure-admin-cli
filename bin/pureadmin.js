@@ -881,7 +881,8 @@ async function cmdCreate(appName, opts) {
   // 6. If using --template-path, substitute placeholders in all copied files
   if (opts.templatePath) {
     console.log(`  Substituting placeholders...`);
-    const exts = ['.svelte', '.html', '.css', '.ts', '.js', '.json', '.md'];
+    const exts = ['.svelte', '.html', '.css', '.ts', '.js', '.json', '.md', ''];
+    const exactNames = ['Makefile'];
     function walkAndSubstitute(dir) {
       for (const entry of fs.readdirSync(dir)) {
         if (['node_modules', '.svelte-kit', '.git'].includes(entry)) continue;
@@ -889,7 +890,7 @@ async function cmdCreate(appName, opts) {
         const stat = fs.statSync(p);
         if (stat.isDirectory()) {
           walkAndSubstitute(p);
-        } else if (exts.some(e => entry.endsWith(e))) {
+        } else if (exts.some(e => e && entry.endsWith(e)) || exactNames.includes(entry)) {
           let content = fs.readFileSync(p, 'utf-8');
           const replaced = substituteVars(content);
           if (replaced !== content) {
@@ -1108,7 +1109,7 @@ async function cmdCreate(appName, opts) {
   let instructions;
   if (recipe?.instructions) {
     instructions = recipe.instructions.map(i =>
-      substituteVars(i).replace(/npm run/g, runCmd)
+      substituteVars(i).replace(/\bnpm run\b/g, runCmd)
     );
     if (skipInstall) instructions.splice(1, 0, `${pm} install`);
   } else {
