@@ -1085,7 +1085,15 @@ async function cmdCreate(appName, opts) {
   console.log();
   console.log(`  Downloading themes...`);
   for (const id of themeIds) {
-    const themesDir = recipe?.themeSetup?.themesDir || 'static/themes';
+    // Read themesDir: app's pureadmin.json > recipe > default
+    let themesDir = recipe?.themeSetup?.themesDir || 'static/themes';
+    const appPureadminJson = path.join(appDir, 'pureadmin.json');
+    if (fs.existsSync(appPureadminJson)) {
+      try {
+        const appThemesDir = JSON.parse(fs.readFileSync(appPureadminJson, 'utf-8')).themesDir;
+        if (appThemesDir) themesDir = appThemesDir;
+      } catch {}
+    }
     const themeDir = path.join(appDir, themesDir, id);
     const zipPath = path.join(appDir, themesDir, `${id}.zip`);
 
