@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.0-rc05 (2026-04-03)
+
+### Added
+- **`--no-install`** — skip dependency installation during `pureadmin create` (useful for batch testing)
+- **Package manager detection** — auto-detects pnpm > bun > npm, uses it for install/add/run commands and Makefile generation
+- **`{{PM}}`, `{{PM_RUN}}`, `{{PM_EXEC}}` placeholders** — Makefile and README templates use the detected package manager
+- **`template/` subfolder support** — `--template-path` reads manifest from root, copies only `template/` contents. Separates tooling (manifest, helper, pages) from project files
+- **Template manifest merging** — when `--template-path` is used with a bundled recipe, features/pageTypes/instructions from the template manifest take priority
+- **README.md and CHANGELOG.md** — recipe steps generate app docs with substituted placeholders
+- **Page generators from template-path** — `fetchTemplate` checks `--template-path` root for `pages/` before falling back to API/bundled
+
+### Fixed
+- **`sv create` failed on names with spaces** — scaffold command used `{{APP_NAME}}` (display name) instead of `{{APP_ID}}` (kebab-case). Fixed in CLI defaults, bundled recipe, and IO server recipe
+- **`cd` instruction showed display name** — recipe instructions used `{{APP_NAME}}` for `cd` step, now uses `{{APP_ID}}`
+- **Makefile not substituted in template-path** — `Makefile` (no extension) wasn't in the file substitution list
+- **`ppnpm run` doubling** — `npm run` replacement matched inside `pnpm run`, now uses `\b` word boundary
+- **`themesDir` override** — app's `pureadmin.json` now takes priority over recipe's `themeSetup.themesDir` (fixes SPA templates using `public/themes`)
+- **Process hanging after create** — added `process.exit(0)` after `main()` to prevent open HTTP handles keeping Node alive
+- **Feature stripping with template-path** — `processTemplatePoints` now accepts recipe object directly, works when `template.json` isn't in appDir
+
+### Changed
+- **Template manifest naming** — aligned with theme convention: `id` (kebab-case identifier) + `name` (display name), replacing `name` + `displayName`
+- **`sv create` uses detected pm** — `--install pnpm` instead of always `--no-install`
+
+---
+
 ## 1.0.0-rc04 (2026-04-02)
 
 ### Added

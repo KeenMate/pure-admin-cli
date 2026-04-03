@@ -194,22 +194,44 @@ npm run build
 npm run pack
 ```
 
-### create — Create a SvelteKit app
+### create — Create a Pure Admin app
 
-Scaffolds a SvelteKit app with Pure Admin components, theme switching, and FOUC prevention:
+Scaffolds an app with Pure Admin components, theme switching, and FOUC prevention:
 
 ```bash
+# Default SvelteKit app
 pureadmin create my-app
-pureadmin create my-app --themes audi,dark --theme audi
+
+# With specific themes and features
+pureadmin create my-app --themes audi,dark --theme audi --font-awesome --profile-panel
+
+# From a local template
+pureadmin create my-app --template-path ../pure-admin-templates/svelte-spa
+
+# With company preset
+pureadmin create my-app --company keenmate --preset full
 ```
 
 Options:
 
 | Flag | Description |
 |------|-------------|
+| `--name <name>` | Custom display name |
 | `--template <name>` | App template (default: `sveltekit`) |
+| `--template-path <dir>` | Use a local template directory |
 | `--themes <list>` | Comma-separated theme slugs (default: `corporate,audi,dark`) |
 | `--theme <slug>` | Default theme (default: first in `--themes`) |
+| `--font-awesome` | Include FontAwesome 6 icons via CDN |
+| `--profile-panel` | Include user profile slide-in panel |
+| `--settings-panel` | Include theme switcher panel |
+| `--company <name>` | Load company defaults from `~/.pureadmin.json` |
+| `--preset <name>` | Load feature/page preset from `~/.pureadmin.json` |
+| `--no-makefile` | Skip Makefile generation |
+| `--no-install` | Skip dependency installation |
+| `--no-build` | Skip initial build |
+| `--verbose` | Show debug output |
+
+Package manager is auto-detected (pnpm > bun > npm) and used for install, Makefile, and next steps.
 
 ## Configuration
 
