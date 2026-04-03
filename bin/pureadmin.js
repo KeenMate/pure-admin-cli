@@ -666,6 +666,7 @@ async function cmdCreate(appName, opts) {
   const includeProfilePanel = opts.profilePanel || resolve('profilePanel') || false;
   const includeSettingsPanel = opts.settingsPanel || resolve('settingsPanel') || false;
   const includeMakefile = !opts.noMakefile && (resolve('makefile') !== false);
+  const skipInstall = opts.noInstall || false;
   const verbose = opts.verbose || false;
 
   console.log();
@@ -677,6 +678,16 @@ async function cmdCreate(appName, opts) {
   console.log();
 
   const { execSync } = require('child_process');
+
+  // Detect package manager: prefer pnpm > bun > npm
+  function detectPm() {
+    for (const pm of ['pnpm', 'bun']) {
+      try { execSync(`${pm} --version`, { stdio: 'pipe' }); return pm; } catch {}
+    }
+    return 'npm';
+  }
+  const pm = detectPm();
+  if (pm !== 'npm') console.log(`  ${dim('Package manager:')} ${pm}`);
 
   // Helper: substitute placeholders — supports both {{VAR}} and __VAR__ syntax
   function substituteVars(text) {
@@ -761,9 +772,9 @@ async function cmdCreate(appName, opts) {
     }
     console.log(green(`  Template copied (${recipe?.displayName || template})`));
   } else {
-    // Scaffold from scratch
-    const scaffoldCmd = recipe?.scaffold?.command || `npx sv create {{APP_NAME}} --template minimal --types ts --no-add-ons --no-install`;
-    const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts`;
+    // Scaffold from scratch (always --no-install — we install after recipe steps)
+    const scaffoldCmd = recipe?.scaffold?.command || `npx sv create {{APP_ID}} --template minimal --types ts --no-add-ons --no-install`;
+    const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_ID}} -- --template skeleton --types ts`;
 
     console.log(`  Running ${template} scaffold...`);
     if (opts.verbose) console.log(dim(`    command: ${substituteVars(scaffoldCmd)}`));
@@ -1012,15 +1023,22 @@ async function cmdCreate(appName, opts) {
   };
   const depList = Object.entries(deps).map(([k, v]) => `${k}@${v}`).join(' ');
 
-  console.log();
-  console.log(`  Installing dependencies...`);
-  try {
-    execSync('npm install', { cwd: appDir, stdio: 'inherit' });
-    if (depList) {
-      execSync(`npm install ${depList}`, { cwd: appDir, stdio: 'inherit' });
+  if (skipInstall) {
+    console.log();
+    console.log(dim(`  Skipping install (--no-install). Run "${pm} install" manually.`));
+  } else {
+    const addCmd = pm === 'bun' ? 'bun add' : pm === 'pnpm' ? 'pnpm add' : 'npm install';
+    const installCmd = pm === 'bun' ? 'bun install' : pm === 'pnpm' ? 'pnpm install' : 'npm install';
+    console.log();
+    console.log(`  Installing dependencies...` + (pm !== 'npm' ? dim(` (${pm})`) : ''));
+    try {
+      execSync(installCmd, { cwd: appDir, stdio: 'inherit' });
+      if (depList) {
+        execSync(`${addCmd} ${depList}`, { cwd: appDir, stdio: 'inherit' });
+      }
+    } catch {
+      console.log(yellow(`  ${pm} install failed — run it manually`));
     }
-  } catch {
-    console.log(yellow('  npm install failed — run it manually'));
   }
 
   // 7. Download themes via pureadmin themes (uses the pureadmin.json we just wrote)
@@ -1044,7 +1062,19 @@ async function cmdCreate(appName, opts) {
   }
 
   // 8. Done
-  const instructions = recipe?.instructions || [`cd ${appName}`, 'npm run dev', 'Open http://localhost:5173'];
+  const runCmd = pm === 'bun' ? 'bun run' : `${pm} run`;
+  const defaultInstructions = [`cd ${appName}`];
+  if (skipInstall) defaultInstructions.push(`${pm} install`);
+  defaultInstructions.push(`${runCmd} dev`, 'Open http://localhost:5173');
+  let instructions;
+  if (recipe?.instructions) {
+    instructions = recipe.instructions.map(i =>
+      substituteVars(i).replace(/npm run/g, runCmd)
+    );
+    if (skipInstall) instructions.splice(1, 0, `${pm} install`);
+  } else {
+    instructions = defaultInstructions;
+  }
   console.log();
   console.log(bold('  App created!'));
   console.log();
@@ -2124,6 +2154,8 @@ async function main() {
       opts.offline = true;
     } else if (rest[i] === '--no-build') {
       opts.noBuild = true;
+    } else if (rest[i] === '--no-install') {
+      opts.noInstall = true;
     } else if (rest[i] === '--no-makefile') {
       opts.noMakefile = true;
     } else if (rest[i] === '--verbose' || rest[i] === '-v') {
@@ -2134,7 +2166,7 @@ async function main() {
       opts.dir = rest[++i];
     } else if (rest[i].startsWith('--')) {
       console.error(`\n  ${bold('Error:')} unknown flag "${rest[i]}"`);
-      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --template, --template-path, --font-awesome, --settings-panel, --profile-panel, --no-makefile, --offline, --no-build, --verbose, --version, --output\n`);
+      console.error(`  Known flags: --server, --api-key, --dir, --themes-dir, --name, --company, --preset, --template, --template-path, --font-awesome, --settings-panel, --profile-panel, --no-makefile, --no-install, --offline, --no-build, --verbose, --version, --output\n`);
       process.exit(1);
     } else {
       positional.push(rest[i]);

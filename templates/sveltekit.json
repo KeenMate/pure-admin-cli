@@ -4,8 +4,8 @@
   "description": "SvelteKit app with Pure Admin components and dynamic theme switching",
   "version": "2.3.4",
   "scaffold": {
-    "command": "npx sv create {{APP_NAME}} --template minimal --types ts --no-add-ons --no-install",
-    "fallback": "npm create svelte@latest {{APP_NAME}} -- --template skeleton --types ts"
+    "command": "npx sv create {{APP_ID}} --template minimal --types ts --no-add-ons --no-install",
+    "fallback": "npm create svelte@latest {{APP_ID}} -- --template skeleton --types ts"
   },
   "dependencies": {
     "@keenmate/svelte-pure-admin": "latest",
@@ -67,7 +67,7 @@
     "npx pureadmin themes"
   ],
   "instructions": [
-    "cd {{APP_NAME}}",
+    "cd {{APP_ID}}",
     "npm run dev",
     "Open http://localhost:5173"
   ]
