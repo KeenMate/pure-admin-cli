@@ -14,20 +14,20 @@ help:
 	@echo ""
 
 setup:
-	npm install
-	npx pureadmin themes
+	{{PM}} install
+	{{PM_EXEC}} pureadmin themes
 
 dev:
-	npm run dev
+	{{PM_RUN}} dev
 
 build:
-	npm run build
+	{{PM_RUN}} build
 
 preview:
-	npm run preview
+	{{PM_RUN}} preview
 
 themes:
-	npx pureadmin themes
+	{{PM_EXEC}} pureadmin themes
 
 clean:
 	rm -rf .svelte-kit build node_modules

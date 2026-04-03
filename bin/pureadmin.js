@@ -709,6 +709,9 @@ async function cmdCreate(appName, opts) {
     sub('USER_NAME', 'User');
     sub('USER_EMAIL', 'user@example.com');
     sub('USER_NAME_URL', 'User');
+    sub('PM', pm);
+    sub('PM_RUN', `${pm} run`);
+    sub('PM_EXEC', pm === 'bun' ? 'bunx' : pm === 'pnpm' ? 'pnpm exec' : 'npx');
 
     // Conditional blocks (old bundled template format only)
     result = result.replace(/\{\{#FONT_AWESOME\}\}([\s\S]*?)\{\{\/FONT_AWESOME\}\}/g,
@@ -756,24 +759,50 @@ async function cmdCreate(appName, opts) {
 
   // 2. Scaffold or copy template
   if (opts.templatePath) {
-    // Local template path — copy entire directory (skip node_modules, .svelte-kit, dist, .git)
+    // Local template path — supports both flat layout and template/ subfolder
     const srcDir = path.resolve(opts.templatePath);
     if (!fs.existsSync(srcDir)) {
       console.error(`\n  ${bold('Error:')} template path not found: ${srcDir}`);
       process.exit(1);
     }
-    console.log(`  Copying template from ${dim(srcDir)}...`);
-    copyDirSync(srcDir, appDir, ['node_modules', '.svelte-kit', 'dist', '.git', 'build']);
 
-    // Read template manifest if present
-    const tmplManifestPath = path.join(appDir, 'template.json');
-    if (fs.existsSync(tmplManifestPath) && !recipe) {
-      try { recipe = JSON.parse(fs.readFileSync(tmplManifestPath, 'utf-8')); } catch {}
+    // Read template manifest from root (before copying)
+    // Read template manifest — merge into recipe (template manifest takes priority for features/pageTypes)
+    const tmplManifestPath = path.join(srcDir, 'template.json');
+    if (fs.existsSync(tmplManifestPath)) {
+      try {
+        const tmplManifest = JSON.parse(fs.readFileSync(tmplManifestPath, 'utf-8'));
+        if (!recipe) {
+          recipe = tmplManifest;
+        } else {
+          // Merge template-specific fields into recipe
+          if (tmplManifest.features) recipe.features = tmplManifest.features;
+          if (tmplManifest.pageTypes) recipe.pageTypes = tmplManifest.pageTypes;
+          if (tmplManifest.displayName) recipe.displayName = tmplManifest.displayName;
+          if (tmplManifest.placeholders) recipe.placeholders = tmplManifest.placeholders;
+          if (tmplManifest.instructions) recipe.instructions = tmplManifest.instructions;
+        }
+      } catch {}
     }
+
+    // If template/ subfolder exists, copy only that; otherwise copy the whole dir (legacy)
+    const templateSubdir = path.join(srcDir, 'template');
+    const copyFrom = fs.existsSync(templateSubdir) ? templateSubdir : srcDir;
+    console.log(`  Copying template from ${dim(copyFrom)}...`);
+    copyDirSync(copyFrom, appDir, ['node_modules', '.svelte-kit', 'dist', '.git', 'build']);
+
+    // Copy template.helper.js to appDir so processTemplatePoints can find it
+    const helperSrc = path.join(srcDir, 'template.helper.js');
+    if (fs.existsSync(helperSrc)) {
+      fs.copyFileSync(helperSrc, path.join(appDir, 'template.helper.js'));
+    }
+
     console.log(green(`  Template copied (${recipe?.displayName || template})`));
   } else {
-    // Scaffold from scratch (always --no-install — we install after recipe steps)
-    const scaffoldCmd = recipe?.scaffold?.command || `npx sv create {{APP_ID}} --template minimal --types ts --no-add-ons --no-install`;
+    // Scaffold from scratch — use detected pm for sv create install
+    const svInstallFlag = skipInstall ? '--no-install' : `--install ${pm}`;
+    const scaffoldCmd = (recipe?.scaffold?.command || `npx sv create {{APP_ID}} --template minimal --types ts --no-add-ons --no-install`)
+      .replace('--no-install', svInstallFlag);
     const scaffoldFallback = recipe?.scaffold?.fallback || `npm create svelte@latest {{APP_ID}} -- --template skeleton --types ts`;
 
     console.log(`  Running ${template} scaffold...`);
@@ -893,12 +922,22 @@ async function cmdCreate(appName, opts) {
   // Pipeline: fetch all templates, then substitute, then write
   const localTemplatesDir = path.join(__dirname, '..', 'templates', template);
 
-  // Fetch template content from server or local fallback
+  // Fetch template content from server, --template-path, or local CLI fallback
+  const templateSrcDir = opts.templatePath ? path.resolve(opts.templatePath) : null;
   async function fetchTemplate(templateName) {
+    // 1. Check --template-path root (for pages/ and other generators)
+    if (templateSrcDir) {
+      const tplPath = path.join(templateSrcDir, templateName);
+      if (fs.existsSync(tplPath)) {
+        return { content: fs.readFileSync(tplPath, 'utf-8'), source: 'template-path' };
+      }
+    }
+    // 2. Try API server
     try {
       const content = await fetchText(`/api/tools/templates/${template}/${templateName}`);
       return { content, source: 'server' };
     } catch {
+      // 3. Bundled CLI fallback
       const localPath = path.join(localTemplatesDir, templateName);
       if (fs.existsSync(localPath)) {
         return { content: fs.readFileSync(localPath, 'utf-8'), source: 'local' };
@@ -1014,7 +1053,7 @@ async function cmdCreate(appName, opts) {
   };
   console.log();
   console.log(`  Processing template features...`);
-  processTemplatePoints(appDir, featureFlags, verbose);
+  processTemplatePoints(appDir, featureFlags, verbose, recipe);
 
   // 7. Install dependencies
   const deps = recipe?.dependencies || {
@@ -1121,11 +1160,14 @@ function saveProjectConfig(configPath, data) {
  * Reads template.json manifest from the app directory, resolves enabled features,
  * then strips data-pa blocks for disabled features from all affected files.
  */
-function processTemplatePoints(appDir, enabledFlags, verbose) {
+function processTemplatePoints(appDir, enabledFlags, verbose, recipe) {
+  // Use passed recipe or read from appDir
   const manifestPath = path.join(appDir, 'template.json');
-  if (!fs.existsSync(manifestPath)) return;
+  const manifest = recipe?.features ? recipe
+    : fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+    : null;
+  if (!manifest) return;
 
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   const features = manifest.features || {};
 
   // Resolve which features are enabled
@@ -1156,8 +1198,7 @@ function processTemplatePoints(appDir, enabledFlags, verbose) {
 
   if (pointsToRemove.size === 0) {
     if (verbose) console.log(dim('    all features enabled, no points to remove'));
-    // Clean up manifest file
-    fs.unlinkSync(manifestPath);
+    if (fs.existsSync(manifestPath)) fs.unlinkSync(manifestPath);
     const helperPath = path.join(appDir, 'template.helper.js');
     if (fs.existsSync(helperPath)) fs.unlinkSync(helperPath);
     return;
@@ -1230,7 +1271,7 @@ function processTemplatePoints(appDir, enabledFlags, verbose) {
   }
 
   // Clean up manifest and helper from the generated app
-  fs.unlinkSync(manifestPath);
+  if (fs.existsSync(manifestPath)) fs.unlinkSync(manifestPath);
   const helperFile = path.join(appDir, 'template.helper.js');
   if (fs.existsSync(helperFile)) fs.unlinkSync(helperFile);
 }
@@ -2211,4 +2252,4 @@ async function main() {
   }
 }
 
-main();
+main().then(() => process.exit(0));
