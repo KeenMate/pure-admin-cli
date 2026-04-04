@@ -29,7 +29,7 @@
 		<script>
 			(function() {
 				// Apply theme mode from localStorage (prevents dark/light flash)
-				var themeMode = localStorage.getItem('theme-mode') || 'light';
+				var themeMode = localStorage.getItem('theme-mode') || '__DEFAULT_MODE__';
 				var resolvedMode;
 				if (themeMode === 'auto') {
 					resolvedMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
