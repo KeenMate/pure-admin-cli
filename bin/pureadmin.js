@@ -733,34 +733,88 @@ async function cmdCreate(appName, opts) {
     return result;
   }
 
-  // 1. Fetch recipe from server
-  process.stdout.write(`  Fetching ${template} recipe... `);
+  // 1. Fetch template or recipe
   let recipe;
-  try {
-    recipe = await fetchJson(`/api/tools/templates/${template}`);
-    console.log(green(`v${recipe.version || 'latest'}`));
-    if (opts.verbose) {
-      console.log(dim(`    recipe: ${recipe.steps?.length || 0} steps, ${Object.keys(recipe.dependencies || {}).length} deps`));
+  let downloadedTemplatePath = null; // set if we download a template ZIP
+
+  if (!opts.templatePath) {
+    // Try downloading template ZIP from templates API first
+    process.stdout.write(`  Fetching ${template} template... `);
+    const os = require('os');
+    const tmpZip = path.join(os.tmpdir(), `pureadmin-template-${template}-${Date.now()}.zip`);
+    const tmpDir = path.join(os.tmpdir(), `pureadmin-template-${template}-${Date.now()}`);
+
+    try {
+      await downloadFile(`/api/templates/${template}/download`, tmpZip);
+      // Extract ZIP to temp dir
+      const { execSync } = require('child_process');
+      fs.mkdirSync(tmpDir, { recursive: true });
+      try {
+        execSync(`unzip -o "${tmpZip}" -d "${tmpDir}"`, { stdio: 'pipe' });
+      } catch {
+        execSync(`tar -xf "${tmpZip}" -C "${tmpDir}"`, { stdio: 'pipe' });
+      }
+      fs.unlinkSync(tmpZip);
+
+      // Read template.json from extracted ZIP
+      const tmplManifestPath = path.join(tmpDir, 'template.json');
+      if (fs.existsSync(tmplManifestPath)) {
+        recipe = JSON.parse(fs.readFileSync(tmplManifestPath, 'utf-8'));
+        downloadedTemplatePath = tmpDir;
+        console.log(green(`v${recipe.version || 'latest'}`) + dim(' (template ZIP)'));
+      } else {
+        throw new Error('No template.json in ZIP');
+      }
+    } catch {
+      // Clean up failed download
+      try { fs.unlinkSync(tmpZip); } catch {}
+      try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+
+      // Fall back to old recipe API
+      process.stdout.write(`\r  Fetching ${template} recipe...  `);
+      try {
+        recipe = await fetchJson(`/api/tools/templates/${template}`);
+        console.log(green(`v${recipe.version || 'latest'}`));
+      } catch {
+        // Fall back to bundled recipe JSON
+        const localRecipePath = path.join(__dirname, '..', 'templates', `${template}.json`);
+        if (fs.existsSync(localRecipePath)) {
+          try { recipe = JSON.parse(fs.readFileSync(localRecipePath, 'utf-8')); } catch { recipe = null; }
+          console.log(yellow(`local fallback v${recipe?.version || '?'}`));
+        } else {
+          console.log(yellow('no recipe available'));
+          recipe = null;
+        }
+      }
+      if (opts.verbose) console.log(dim(`    fallback: bundled templates from ${path.join(__dirname, '..', 'templates', template)}`));
     }
-  } catch {
-    // Fall back to bundled recipe JSON
-    const localRecipePath = path.join(__dirname, '..', 'templates', `${template}.json`);
-    if (fs.existsSync(localRecipePath)) {
-      try { recipe = JSON.parse(fs.readFileSync(localRecipePath, 'utf-8')); } catch { recipe = null; }
-      console.log(yellow(`local fallback v${recipe?.version || '?'}`));
-    } else {
-      console.log(yellow('no recipe available'));
-      recipe = null;
+  } else {
+    // --template-path: still fetch recipe for merge
+    process.stdout.write(`  Fetching ${template} recipe... `);
+    try {
+      recipe = await fetchJson(`/api/tools/templates/${template}`);
+      console.log(green(`v${recipe.version || 'latest'}`));
+    } catch {
+      const localRecipePath = path.join(__dirname, '..', 'templates', `${template}.json`);
+      if (fs.existsSync(localRecipePath)) {
+        try { recipe = JSON.parse(fs.readFileSync(localRecipePath, 'utf-8')); } catch { recipe = null; }
+        console.log(yellow(`local fallback v${recipe?.version || '?'}`));
+      } else {
+        console.log(yellow('no recipe available'));
+        recipe = null;
+      }
     }
-    if (opts.verbose) console.log(dim(`    fallback: bundled templates from ${path.join(__dirname, '..', 'templates', template)}`));
   }
+
+  // Use downloaded template as template-path
+  const effectiveTemplatePath = opts.templatePath || downloadedTemplatePath;
 
   const appDir = path.join(process.cwd(), appName);
 
   // 2. Scaffold or copy template
-  if (opts.templatePath) {
-    // Local template path — supports both flat layout and template/ subfolder
-    const srcDir = path.resolve(opts.templatePath);
+  if (effectiveTemplatePath) {
+    // Template path (local or downloaded) — supports both flat layout and template/ subfolder
+    const srcDir = path.resolve(effectiveTemplatePath);
     if (!fs.existsSync(srcDir)) {
       console.error(`\n  ${bold('Error:')} template path not found: ${srcDir}`);
       process.exit(1);
@@ -879,8 +933,8 @@ async function cmdCreate(appName, opts) {
     };
   });
 
-  // 6. If using --template-path, substitute placeholders in all copied files
-  if (opts.templatePath) {
+  // 6. If using template path, substitute placeholders in all copied files
+  if (effectiveTemplatePath) {
     console.log(`  Substituting placeholders...`);
     const exts = ['.svelte', '.html', '.css', '.ts', '.js', '.json', '.md', ''];
     const exactNames = ['Makefile'];
@@ -916,16 +970,16 @@ async function cmdCreate(appName, opts) {
     ...(includeMakefile ? [{ action: 'create', path: 'Makefile', template: 'Makefile' }] : []),
     ...pageSteps,
   ];
-  // When using --template-path, skip 'create' steps (files already copied), keep json-merge and pages
-  const steps = opts.templatePath
+  // When using template path, skip 'create' steps (files already copied), keep json-merge and pages
+  const steps = effectiveTemplatePath
     ? allSteps.filter(s => s.action !== 'create' || s._pageLabel)  // keep page creates + non-create steps
     : allSteps;
 
   // Pipeline: fetch all templates, then substitute, then write
   const localTemplatesDir = path.join(__dirname, '..', 'templates', template);
 
-  // Fetch template content from server, --template-path, or local CLI fallback
-  const templateSrcDir = opts.templatePath ? path.resolve(opts.templatePath) : null;
+  // Fetch template content from server, template path, or local CLI fallback
+  const templateSrcDir = effectiveTemplatePath ? path.resolve(effectiveTemplatePath) : null;
   async function fetchTemplate(templateName) {
     // 1. Check --template-path root (for pages/ and other generators)
     if (templateSrcDir) {
@@ -1130,6 +1184,11 @@ async function cmdCreate(appName, opts) {
   console.log(`  ${dim('Next steps:')}`);
   instructions.forEach(i => console.log(`    ${substituteVars(i)}`));
   console.log();
+
+  // Clean up downloaded template temp dir
+  if (downloadedTemplatePath) {
+    try { fs.rmSync(downloadedTemplatePath, { recursive: true }); } catch {}
+  }
 }
 
 // ---------------------------------------------------------------------------
