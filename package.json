@@ -32,5 +32,8 @@
     "templates/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "dependencies": {
+    "@clack/prompts": "^1.2.0"
+  }
 }
