@@ -1,6 +1,6 @@
 # @keenmate/pureadmin CLI - Makefile
 
-.PHONY: help verify publish-dry publish publish-rc clean
+.PHONY: help verify publish-dry publish publish-rc clean test
 
 # NPM publish tag (empty for latest, use TAG=rc for pre-releases)
 TAG ?=
@@ -18,7 +18,7 @@ help:
 	@echo "    make publish TAG=beta  - Publish with custom tag"
 	@echo ""
 	@echo "  Development:"
-	@echo "    make test         - Run CLI with --help"
+	@echo "    make test         - Run tests"
 	@echo "    make link         - npm link for local testing"
 	@echo "    make unlink       - npm unlink"
 	@echo ""
@@ -39,9 +39,9 @@ publish:
 publish-rc:
 	npm publish --access public --tag rc
 
-# Smoke test
+# Run tests
 test:
-	node bin/pureadmin.js --version
+	node --test test/*.test.js
 
 # Link for local development
 link:
