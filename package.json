@@ -1,6 +1,6 @@
 {
   "name": "@keenmate/pureadmin",
-  "version": "1.0.0-rc04",
+  "version": "1.0.0-rc05",
   "description": "CLI for building, publishing, and consuming Pure Admin themes — scaffold apps, manage theme packages, and integrate with pureadmin.io",
   "bin": {
     "pureadmin": "bin/pureadmin.js"
@@ -18,6 +18,9 @@
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/KeenMate/pure-admin-cli.git"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
   },
   "homepage": "https://pureadmin.io",
   "engines": {
