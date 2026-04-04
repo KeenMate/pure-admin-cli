@@ -1,33 +1,42 @@
 # Changelog
 
-## 1.0.0-rc05 (2026-04-04) — published to npm
+## 1.0.0-rc06 (2026-04-04)
 
 ### Added
-- **`--no-install`** — skip dependency installation during `pureadmin create` (useful for batch testing)
-- **Package manager detection** — auto-detects pnpm > bun > npm, uses it for install/add/run commands and Makefile generation
-- **`{{PM}}`, `{{PM_RUN}}`, `{{PM_EXEC}}` placeholders** — Makefile and README templates use the detected package manager
-- **`template/` subfolder support** — `--template-path` reads manifest from root, copies only `template/` contents. Separates tooling (manifest, helper, pages) from project files
-- **Template manifest merging** — when `--template-path` is used with a bundled recipe, features/pageTypes/instructions from the template manifest take priority
-- **README.md and CHANGELOG.md** — recipe steps generate app docs with substituted placeholders
-- **Page generators from template-path** — `fetchTemplate` checks `--template-path` root for `pages/` before falling back to API/bundled
+- **Icon provider system** — `--font-awesome` (default), `--lucide`, `--fluent-ui` flags. Templates use `__ICON:name__` placeholders resolved to provider-specific markup at create time
+- **Lucide support** — `@lucide/svelte@next` added as dependency, per-file imports auto-generated via `__EXTRA_IMPORTS__` placeholder
+- **Interactive create wizard** — `pureadmin create` (no args) launches @clack/prompts wizard: pick technology → template → name → features → icon provider → themes → variant → mode → company
+- **Wizard remembers selections** — saves to `~/.pureadmin.json` `lastCreate`, preselects on next run
+- **Theme variant + mode selection** — wizard fetches theme metadata, prompts for default variant (e.g. Default/Blue/Green/Red) and mode (dark/light)
+- **`__DEFAULT_MODE__` and `__DEFAULT_VARIANT__`** — FOUC script uses theme's actual default mode and variant instead of hardcoding
+- **`pureadmin templates list/pack/publish`** — template management commands
+- **`pureadmin themes` subcommands** — `update`, `build`, `pack`, `publish`, `validate` moved under `themes`
+- **`--template <id>` fetches from API** — downloads template ZIP from `/api/templates/<id>/download`
+- **`--no-install`** — skip dependency installation
+- **Package manager detection** — pnpm > bun > npm, used for install, Makefile (`{{PM}}`/`{{PM_RUN}}`/`{{PM_EXEC}}`), and next steps
+- **`template/` subfolder support** — separates tooling from project files
+- **CLI split into 14 modules** under `lib/` — entry point is 15 lines
+- **31 tests** using `node:test` (zero test dependencies)
 
 ### Fixed
-- **`sv create` failed on names with spaces** — scaffold command used `{{APP_NAME}}` (display name) instead of `{{APP_ID}}` (kebab-case). Fixed in CLI defaults, bundled recipe, and IO server recipe
-- **`cd` instruction showed display name** — recipe instructions used `{{APP_NAME}}` for `cd` step, now uses `{{APP_ID}}`
-- **Makefile not substituted in template-path** — `Makefile` (no extension) wasn't in the file substitution list
-- **`ppnpm run` doubling** — `npm run` replacement matched inside `pnpm run`, now uses `\b` word boundary
-- **`themesDir` override** — app's `pureadmin.json` now takes priority over recipe's `themeSetup.themesDir` (fixes SPA templates using `public/themes`)
-- **Process hanging after create** — added `process.exit(0)` after `main()` to prevent open HTTP handles keeping Node alive
-- **Feature stripping with template-path** — `processTemplatePoints` now accepts recipe object directly, works when `template.json` isn't in appDir
-
-### Added (templates command)
-- **`pureadmin templates list`** — list available templates from API
-- **`pureadmin templates pack`** — package template(s) into ZIP for upload
-- **`pureadmin templates publish`** — pack + upload template(s) to pureadmin.io
-- **`--template <id>` fetches from API** — `pureadmin create my-app --template svelte-spa` downloads the template ZIP from `/api/templates/<id>/download`, no `--template-path` needed
+- **`sv create` failed on names with spaces** — `{{APP_NAME}}` → `{{APP_ID}}` in scaffold commands
+- **Makefile not substituted** in template-path (missing from extension list)
+- **`ppnpm run` doubling** — `\b` word boundary in npm run replacement
+- **`themesDir` priority** — app's `pureadmin.json` wins over recipe
+- **Process hanging** — `process.exit(0)` after `main()`
+- **Feature stripping** with downloaded templates (recipe object passed directly)
+- **API key priority** — env var now overrides config files
 
 ### Changed
-- **Template manifest naming** — aligned with theme convention: `id` (kebab-case identifier) + `name` (display name), replacing `name` + `displayName`
+- **`pureadmin list`** — now lists templates (matches `create` flow), themes moved to `themes list`
+- **Template manifest naming** — `id` + `name` aligned with theme convention
+- **`sv create` uses detected pm** — `--install pnpm` instead of `--no-install`
+
+---
+
+## 1.0.0-rc05 (2026-04-04) — published to npm
+
+(see rc06 for consolidated changelog)
 - **`sv create` uses detected pm** — `--install pnpm` instead of always `--no-install`
 
 ---
