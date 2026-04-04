@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0-rc05 (2026-04-04)
+## 1.0.0-rc05 (2026-04-04) — published to npm
 
 ### Added
 - **`--no-install`** — skip dependency installation during `pureadmin create` (useful for batch testing)
