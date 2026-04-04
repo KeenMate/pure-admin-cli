@@ -18,7 +18,7 @@
 //   versions <slug>          Show available versions
 //   compatible <core-ver>    List themes compatible with a core version
 //   create <name>            Create a SvelteKit app with Pure Admin
-//   themes [slug...]         List or add themes to project
+//   themes [id...]           List or add themes to project
 //   update                   Re-download changed themes
 //   build [theme...]         Compile SCSS → CSS
 //   pack [theme...]          Build + package into ZIP
@@ -2252,17 +2252,17 @@ function usage(error) {
     create <name> [options]     Create a Pure Admin app from a template
 
   ${bold('Theme commands:')}
-    themes [slug...]            List or add themes to project
+    themes [id...]              List or add themes to project
     themes update               Re-download changed themes
-    themes build [theme...]     Compile SCSS to CSS
-    themes pack [theme...]      Package theme(s) into ZIP
-    themes publish [theme...]   Pack + upload themes to pureadmin.io
-    themes validate [theme...]  Check CSS for readability, variables, consistency
+    themes build [id...]        Compile SCSS to CSS
+    themes pack [id...]         Package theme(s) into ZIP
+    themes publish [id...]      Pack + upload themes to pureadmin.io
+    themes validate [id...]     Check CSS for readability, variables, consistency
 
   ${bold('Template commands:')}
     templates                   List available templates
-    templates pack [name...]    Package template(s) into ZIP
-    templates publish [name...] Pack + upload templates to pureadmin.io
+    templates pack [id...]      Package template(s) into ZIP
+    templates publish [id...]   Pack + upload templates to pureadmin.io
 
   ${bold('Download options:')}
     --version <ver>             Download specific version (default: latest)
