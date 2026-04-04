@@ -1389,7 +1389,24 @@ function extractThemeZip(zipPath, destDir) {
 }
 
 // ---------------------------------------------------------------------------
-// themes command
+// themes subcommand router
+// ---------------------------------------------------------------------------
+async function cmdThemesRouter(subArgs, opts) {
+  const sub = subArgs[0];
+
+  // Subcommands
+  if (sub === 'update') return await cmdUpdate();
+  if (sub === 'build') return await cmdBuild(subArgs.slice(1));
+  if (sub === 'pack') return await cmdPack(subArgs.slice(1), opts);
+  if (sub === 'publish') return await cmdPublish(subArgs.slice(1), opts);
+  if (sub === 'validate') return await cmdValidate(subArgs.slice(1));
+
+  // Default: list/add (original cmdThemes behavior)
+  return await cmdThemes(subArgs, opts);
+}
+
+// ---------------------------------------------------------------------------
+// themes list/add
 // ---------------------------------------------------------------------------
 async function cmdThemes(slugs, opts) {
   const proj = loadProjectConfig();
@@ -2232,14 +2249,20 @@ function usage(error) {
     compatible <core-version>   List themes compatible with a core version
     download <slug> [options]   Download a theme ZIP
     init <id> [name]            Scaffold a new theme project with tools
-    create <name> [options]     Create a SvelteKit app with Pure Admin
+    create <name> [options]     Create a Pure Admin app from a template
+
+  ${bold('Theme commands:')}
     themes [slug...]            List or add themes to project
-    update                      Re-download changed themes
-    build [theme...]            Compile SCSS to CSS
-    pack [theme...]             Package theme(s) into ZIP
-    publish [theme...]          Pack + upload themes to pureadmin.io
-    validate [theme...]         Check CSS for readability, variables, consistency
-    templates [sub] [args]      Template commands (list, pack, publish)
+    themes update               Re-download changed themes
+    themes build [theme...]     Compile SCSS to CSS
+    themes pack [theme...]      Package theme(s) into ZIP
+    themes publish [theme...]   Pack + upload themes to pureadmin.io
+    themes validate [theme...]  Check CSS for readability, variables, consistency
+
+  ${bold('Template commands:')}
+    templates                   List available templates
+    templates pack [name...]    Package template(s) into ZIP
+    templates publish [name...] Pack + upload templates to pureadmin.io
 
   ${bold('Download options:')}
     --version <ver>             Download specific version (default: latest)
@@ -2506,13 +2529,14 @@ async function main() {
       case 'download': return await cmdDownload(positional[0], opts);
       case 'init': return await cmdInit(positional[0], positional.slice(1).join(' ') || undefined);
       case 'create': return await cmdCreate(positional[0], opts);
-      case 'themes': return await cmdThemes(positional, opts);
+      case 'themes': return await cmdThemesRouter(positional, opts);
+      case 'templates': return await cmdTemplates(positional, opts);
+      // Legacy top-level aliases for theme commands
       case 'update': return await cmdUpdate();
       case 'build': return await cmdBuild(positional);
       case 'pack': return await cmdPack(positional, opts);
       case 'publish': return await cmdPublish(positional, opts);
       case 'validate': return await cmdValidate(positional);
-      case 'templates': return await cmdTemplates(positional, opts);
       default: return usage(`Unknown command: ${command}`);
     }
   } catch (err) {
