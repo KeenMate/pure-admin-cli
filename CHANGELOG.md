@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0-rc05 (2026-04-03)
+## 1.0.0-rc05 (2026-04-04)
 
 ### Added
 - **`--no-install`** — skip dependency installation during `pureadmin create` (useful for batch testing)
@@ -19,6 +19,12 @@
 - **`themesDir` override** — app's `pureadmin.json` now takes priority over recipe's `themeSetup.themesDir` (fixes SPA templates using `public/themes`)
 - **Process hanging after create** — added `process.exit(0)` after `main()` to prevent open HTTP handles keeping Node alive
 - **Feature stripping with template-path** — `processTemplatePoints` now accepts recipe object directly, works when `template.json` isn't in appDir
+
+### Added (templates command)
+- **`pureadmin templates list`** — list available templates from API
+- **`pureadmin templates pack`** — package template(s) into ZIP for upload
+- **`pureadmin templates publish`** — pack + upload template(s) to pureadmin.io
+- **`--template <id>` fetches from API** — `pureadmin create my-app --template svelte-spa` downloads the template ZIP from `/api/templates/<id>/download`, no `--template-path` needed
 
 ### Changed
 - **Template manifest naming** — aligned with theme convention: `id` (kebab-case identifier) + `name` (display name), replacing `name` + `displayName`

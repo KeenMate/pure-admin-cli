@@ -233,6 +233,23 @@ Options:
 
 Package manager is auto-detected (pnpm > bun > npm) and used for install, Makefile, and next steps.
 
+### templates — Manage and publish templates
+
+```bash
+# List available templates from pureadmin.io
+pureadmin templates list
+
+# Pack template(s) into ZIP
+pureadmin templates pack
+pureadmin templates pack svelte-spa
+
+# Pack + upload to pureadmin.io
+pureadmin templates publish
+pureadmin templates publish svelte-sveltekit
+```
+
+Run from a templates workspace (multiple template dirs) or a single template directory.
+
 ## Configuration
 
 All configuration is JSON. Three levels, merged in order (later overrides earlier):
