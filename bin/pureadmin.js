@@ -1393,15 +1393,26 @@ function extractThemeZip(zipPath, destDir) {
 // ---------------------------------------------------------------------------
 async function cmdThemesRouter(subArgs, opts) {
   const sub = subArgs[0];
+  const rest = subArgs.slice(1);
 
   // Subcommands
+  // No args → show configured project themes (original behavior)
+  if (!sub) return await cmdThemes(subArgs, opts);
+  // Explicit 'list' → show all themes from API
+  if (sub === 'list') return await cmdList();
+  if (sub === 'info') return await cmdInfo(rest[0]);
+  if (sub === 'versions') return await cmdVersions(rest[0]);
+  if (sub === 'search') return await cmdSearch(rest.join(' '));
+  if (sub === 'compatible') return await cmdCompatible(rest[0]);
+  if (sub === 'download') return await cmdDownload(rest[0], opts);
+  if (sub === 'init') return await cmdInit(rest[0], rest.slice(1).join(' ') || undefined);
   if (sub === 'update') return await cmdUpdate();
-  if (sub === 'build') return await cmdBuild(subArgs.slice(1));
-  if (sub === 'pack') return await cmdPack(subArgs.slice(1), opts);
-  if (sub === 'publish') return await cmdPublish(subArgs.slice(1), opts);
-  if (sub === 'validate') return await cmdValidate(subArgs.slice(1));
+  if (sub === 'build') return await cmdBuild(rest);
+  if (sub === 'pack') return await cmdPack(rest, opts);
+  if (sub === 'publish') return await cmdPublish(rest, opts);
+  if (sub === 'validate') return await cmdValidate(rest);
 
-  // Default: list/add (original cmdThemes behavior)
+  // Default: add themes (slugs passed directly)
   return await cmdThemes(subArgs, opts);
 }
 
@@ -2242,17 +2253,18 @@ function usage(error) {
     pureadmin <command> [options]
 
   ${bold('Commands:')}
-    list                        List all themes
-    info <slug>                 Show theme details, versions, core compat
-    versions <slug>             Show available versions for a theme
-    search <query>              Search themes by name or description
-    compatible <core-version>   List themes compatible with a core version
-    download <slug> [options]   Download a theme ZIP
-    init <id> [name]            Scaffold a new theme project with tools
+    list                        List available templates
     create <name> [options]     Create a Pure Admin app from a template
 
   ${bold('Theme commands:')}
-    themes [id...]              List or add themes to project
+    themes                      List all themes
+    themes info <id>            Show theme details, versions, core compat
+    themes versions <id>        Show available versions for a theme
+    themes search <query>       Search themes by name or description
+    themes compatible <ver>     List themes compatible with a core version
+    themes download <id>        Download a theme ZIP
+    themes init <id> [name]     Scaffold a new theme project
+    themes [id...]              Add themes to project
     themes update               Re-download changed themes
     themes build [id...]        Compile SCSS to CSS
     themes pack [id...]         Package theme(s) into ZIP
@@ -2521,17 +2533,17 @@ async function main() {
 
   try {
     switch (command) {
-      case 'list': return await cmdList();
+      case 'list': return await cmdTemplates(['list'], opts);
+      case 'create': return await cmdCreate(positional[0], opts);
+      case 'themes': return await cmdThemesRouter(positional, opts);
+      case 'templates': return await cmdTemplates(positional, opts);
+      // Legacy top-level aliases for theme commands
       case 'info': return await cmdInfo(positional[0]);
       case 'versions': return await cmdVersions(positional[0]);
       case 'search': return await cmdSearch(positional.join(' '));
       case 'compatible': return await cmdCompatible(positional[0]);
       case 'download': return await cmdDownload(positional[0], opts);
       case 'init': return await cmdInit(positional[0], positional.slice(1).join(' ') || undefined);
-      case 'create': return await cmdCreate(positional[0], opts);
-      case 'themes': return await cmdThemesRouter(positional, opts);
-      case 'templates': return await cmdTemplates(positional, opts);
-      // Legacy top-level aliases for theme commands
       case 'update': return await cmdUpdate();
       case 'build': return await cmdBuild(positional);
       case 'pack': return await cmdPack(positional, opts);
