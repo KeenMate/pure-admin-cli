@@ -37,6 +37,8 @@
 					resolvedMode = themeMode;
 				}
 				document.body.classList.add('pa-mode-' + resolvedMode);
+				var colorVariant = localStorage.getItem('color-variant') || '__DEFAULT_VARIANT__';
+				if (colorVariant) document.body.classList.add(colorVariant);
 
 				// Apply sidebar hidden state
 				if (localStorage.getItem('sidebar-hidden') === 'true') {
