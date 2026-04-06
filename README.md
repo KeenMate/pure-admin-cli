@@ -4,6 +4,21 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New
+
+### v1.0.0-rc08
+- **Interactive wizard** — `pureadmin create` with no args launches a guided setup using @clack/prompts
+- **Icon providers** — `--font-awesome` (default), `--lucide`, `--fluent-ui` with `__ICON:name__` placeholders
+- **Template operations API** — `template.helper.js` exports `addDependency`, `inject`, `addRoute`, `addSidebarItem` etc., called via `{ "action": "call" }` recipe steps
+- **Wizard presets** — save/load create configurations, workspace-based company auto-detection
+- **Consistent CLI structure** — `themes/templates/profiles/presets` with `list`, `show`, `delete` subcommands
+
+### v1.0.0-rc07
+- **Condensed wizard** — parallel data loading, combined selects, ~5 prompts instead of 10+
+- **Theme variant + mode selection** — pick default appearance from theme metadata
+- **`create-if` pipeline action** — conditional file creation based on feature flags
+- **CLI split into 14 modules** — `lib/` structure, 33 tests
+
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)
 - **Theme source** — [github.com/keenmate/pure-admin-themes](https://github.com/keenmate/pure-admin-themes)
@@ -23,232 +38,83 @@ npx @keenmate/pureadmin <command>
 
 ## Commands
 
-### build — Compile SCSS to CSS
-
-```bash
-# Build all themes in workspace
-pureadmin build
-
-# Build specific theme(s)
-pureadmin build audi corporate
-```
-
-Works in multi-theme workspaces (directories with `theme.json`) and single-theme projects.
-
-### pack — Package theme into ZIP
-
-```bash
-# Build + pack all themes
-pureadmin pack
-
-# Pack specific theme(s)
-pureadmin pack audi
-
-# Pack without building (use existing CSS)
-pureadmin pack audi --no-build
-```
-
-Computes SHA-256 checksums for all files, metadata hash, `content_sha`, detects external domains in CSS, and rejects undeclared JavaScript.
-
-### publish — Pack + upload to pureadmin.io
-
-```bash
-# Build + pack + upload all themes
-pureadmin publish
-
-# Publish specific theme
-pureadmin publish audi
-
-# With explicit API key
-pureadmin publish audi --api-key YOUR_KEY
-```
-
-API key resolution (in order of precedence):
-1. `--api-key` flag
-2. `.pureadmin.json` → `apiKey` (gitignored, local overrides)
-3. `pureadmin.json` → `apiKey` (project config)
-4. `~/.pureadmin.json` → `apiKey` (user defaults)
-5. `$PUREADMIN_API_KEY` environment variable
-
-### validate — Check theme CSS quality
-
-```bash
-# Validate all themes in workspace
-pureadmin validate
-
-# Validate specific theme
-pureadmin validate audi
-```
-
-Checks:
-- **Readability** — WCAG contrast ratios for outline/filled buttons and color slots per mode (dark/light)
-- **CSS Variables** — Required `--pa-*` variable definitions
-- **Consistency** — Hardcoded border-radius values that should use CSS variables
-
-### list — List all themes
-
-```bash
-pureadmin list
-```
-
-Shows all available themes with slug, version, and tags.
-
-### info — Show theme details
-
-```bash
-pureadmin info audi
-```
-
-Output includes versions, core compatibility, font, tags, variants, and content SHA.
-
-### versions — Show available versions
-
-```bash
-pureadmin versions audi
-```
-
-### search — Search themes
-
-```bash
-pureadmin search dark
-pureadmin search "custom font"
-```
-
-### compatible — List compatible themes
-
-Filter themes by pure-admin-core version:
-
-```bash
-pureadmin compatible 2.0.0
-```
-
-### download — Download a theme ZIP
-
-```bash
-# Latest version
-pureadmin download audi
-
-# Specific version
-pureadmin download audi --version 2.0.2
-
-# Custom output filename
-pureadmin download audi --output my-theme.zip
-```
-
-### themes — Manage project themes
-
-List configured themes:
-
-```bash
-pureadmin themes
-```
-
-Add themes to your project (downloads + extracts to the configured directory):
-
-```bash
-# Add a single theme
-pureadmin themes express
-
-# Add multiple themes
-pureadmin themes audi dark express
-
-# Offline mode — theme files committed to repo for builds without network
-pureadmin themes express --offline
-
-# Custom output directory
-pureadmin themes express --dir public/themes
-```
-
-Theme configuration is saved to `pureadmin.json`:
-
-```json
-{
-  "themesDir": "static/themes",
-  "themes": {
-    "audi": { "version": "2.0.2", "content_sha": "sha256:61df...", "offline": false },
-    "express": { "version": "2.0.2", "content_sha": "sha256:1d77...", "offline": true }
-  }
-}
-```
-
-- **online** (`--offline` not set) — theme files are re-downloaded on `pureadmin update`. Gitignore them.
-- **offline** (`--offline`) — theme files are committed to the repo. Build pipelines work without network access. `pureadmin update` still refreshes them when run with network.
-
-### update — Update themes
-
-Checks each configured theme's `content_sha` against the server and re-downloads only what changed:
-
-```bash
-pureadmin update
-```
-
-### init — Scaffold a new theme project
-
-Creates a theme package project with template files and development tools:
-
-```bash
-pureadmin init my-theme "My Custom Theme"
-cd my-theme
-npm install
-npm run build
-npm run pack
-```
-
 ### create — Create a Pure Admin app
 
-Scaffolds an app with Pure Admin components, theme switching, and FOUC prevention:
-
 ```bash
-# Default SvelteKit app
-pureadmin create my-app
+# Interactive wizard
+pureadmin create
 
-# With specific themes and features
-pureadmin create my-app --themes audi,dark --theme audi --font-awesome --profile-panel
-
-# From a local template
-pureadmin create my-app --template-path ../pure-admin-templates/svelte-spa
+# Direct
+pureadmin create my-app --template svelte-spa --font-awesome --profile-panel
 
 # With company preset
 pureadmin create my-app --company keenmate --preset full
 ```
 
-Options:
-
 | Flag | Description |
 |------|-------------|
-| `--name <name>` | Custom display name |
-| `--template <name>` | App template (default: `sveltekit`) |
+| `--template <id>` | Template to use (fetched from API) |
 | `--template-path <dir>` | Use a local template directory |
-| `--themes <list>` | Comma-separated theme slugs (default: `corporate,audi,dark`) |
-| `--theme <slug>` | Default theme (default: first in `--themes`) |
-| `--font-awesome` | Include FontAwesome 6 icons via CDN |
-| `--profile-panel` | Include user profile slide-in panel |
-| `--settings-panel` | Include theme switcher panel |
-| `--company <name>` | Load company defaults from `~/.pureadmin.json` |
-| `--preset <name>` | Load feature/page preset from `~/.pureadmin.json` |
-| `--no-makefile` | Skip Makefile generation |
+| `--name <name>` | Custom display name |
+| `--themes <list>` | Comma-separated theme slugs |
+| `--theme <slug>` | Default theme |
+| `--font-awesome` | FontAwesome 6 icons (default) |
+| `--lucide` | Lucide icons (Svelte components) |
+| `--fluent-ui` | Fluent UI icons |
+| `--profile-panel` | User profile panel |
+| `--settings-panel` | Theme switcher panel |
+| `--company <id>` | Company profile from `~/.pureadmin.json` |
+| `--preset <name>` | Feature/page preset |
 | `--no-install` | Skip dependency installation |
 | `--no-build` | Skip initial build |
-| `--verbose` | Show debug output |
+| `--no-makefile` | Skip Makefile |
+| `--verbose` | Debug output |
 
-Package manager is auto-detected (pnpm > bun > npm) and used for install, Makefile, and next steps.
+Package manager is auto-detected (pnpm > bun > npm).
 
-### templates — Manage and publish templates
+### themes — Browse and manage themes
 
 ```bash
-# List available templates from pureadmin.io
-pureadmin templates list
-
-# Pack template(s) into ZIP
-pureadmin templates pack
-pureadmin templates pack svelte-spa
-
-# Pack + upload to pureadmin.io
-pureadmin templates publish
-pureadmin templates publish svelte-sveltekit
+pureadmin themes list                   # List all themes from API
+pureadmin themes list --local           # List project-configured themes
+pureadmin themes show audi              # Show theme details
+pureadmin themes search "dark font"     # Search themes
+pureadmin themes versions audi          # Available versions
+pureadmin themes compatible 2.0.0       # Themes for a core version
+pureadmin themes download audi          # Download theme ZIP
+pureadmin themes add express dark       # Add themes to project
+pureadmin themes add express --offline  # Add and commit to repo
+pureadmin themes update                 # Re-download changed themes
+pureadmin themes init my-theme          # Scaffold a new theme project
+pureadmin themes build                  # Compile SCSS to CSS
+pureadmin themes pack                   # Package into ZIP
+pureadmin themes publish                # Pack + upload to pureadmin.io
+pureadmin themes validate               # Check CSS quality
 ```
 
-Run from a templates workspace (multiple template dirs) or a single template directory.
+### templates — Browse and publish templates
+
+```bash
+pureadmin templates list                # List available templates from API
+pureadmin templates pack                # Package into ZIP
+pureadmin templates publish             # Pack + upload to pureadmin.io
+```
+
+### profiles — Company profiles
+
+```bash
+pureadmin profiles list                 # List profiles and workspace mappings
+pureadmin profiles show keenmate        # Show profile details
+pureadmin profiles delete keenmate      # Remove a profile
+```
+
+### presets — Saved create configurations
+
+```bash
+pureadmin presets list                  # List saved presets
+pureadmin presets show my-setup         # Show preset details
+pureadmin presets delete my-setup       # Remove a preset
+```
 
 ## Configuration
 
@@ -293,9 +159,25 @@ Base defaults for all projects. On Windows: `C:\Users\<username>\.pureadmin.json
 ```json
 {
   "url": "https://pureadmin.io",
-  "apiKey": "your-default-key"
+  "apiKey": "your-default-key",
+  "companies": {
+    "keenmate": {
+      "name": "KeenMate s.r.o.",
+      "copyright": "© 2026 KeenMate s.r.o.",
+      "defaultThemes": "corporate,audi,dark",
+      "defaultTheme": "corporate"
+    }
+  },
+  "workspaces": {
+    "C:/Git/KM": {
+      "defaultCompany": "keenmate",
+      "companies": ["keenmate", "babetti"]
+    }
+  }
 }
 ```
+
+**Workspace detection:** When you run `pureadmin create` from a directory matching a workspace path (e.g. `C:\Git\KM\my-project`), the matching company profile is auto-selected. The wizard filters to workspace companies and preselects `defaultCompany`.
 
 ## License
 

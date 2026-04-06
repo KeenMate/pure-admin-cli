@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.0-rc08 (2026-04-06)
+
+### Added
+- **`profiles list/show/delete`** — manage company profiles and workspace mappings
+- **`presets list/show/delete`** — manage saved create presets
+- **Workspace auto-detection** — `~/.pureadmin.json` → `workspaces` maps directory paths to companies with `defaultCompany` and `companies` list
+- **Preset hints** — preset selection shows template, features, and themes
+
+### Changed
+- **Consistent command verbs** — all resources use `list`, `show`, `delete` (not `info`/`rm`)
+- **`themes list`** replaces bare `themes` (no-args shows hint)
+- **`themes list --local`** for project-configured themes
+- **`themes add [id...]`** replaces bare `themes [id...]`
+- **Top-level `list` removed** — use `themes list` or `templates list`
+
+---
+
 ## 1.0.0-rc07 (2026-04-06)
 
 ### Added
