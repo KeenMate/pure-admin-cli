@@ -15,8 +15,8 @@ describe('CLI', () => {
   it('--help shows usage', () => {
     const output = run('--help');
     assert.ok(output.includes('Commands:'));
-    assert.ok(output.includes('Theme commands:'));
-    assert.ok(output.includes('Template commands:'));
+    assert.ok(output.includes('Themes:'));
+    assert.ok(output.includes('Templates:'));
   });
 
   it('no args shows usage', () => {
