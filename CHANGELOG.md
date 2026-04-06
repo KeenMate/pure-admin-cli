@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0-rc09 (2026-04-06) [PUBLISHED]
+## 1.0.0-rc09 (2026-04-06) [PUBLISHED] [LATEST]
 
 ### Added
 - **Data-driven command definitions** (`lib/commands.js`) — single source of truth for all commands, subcommands, args, flags. Drives help text, validation, and `--llm` output
