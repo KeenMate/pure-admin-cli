@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0-rc08 (2026-04-06)
+## 1.0.0-rc08 (2026-04-06) [PUBLISHED]
 
 ### Added
 - **`profiles list/show/delete`** — manage company profiles and workspace mappings
