@@ -43,15 +43,32 @@ describe('CLI', () => {
     }
   });
 
-  it('list command is recognized', () => {
-    // Will fail to reach server but should not error on command parsing
-    const output = run('list --server http://127.0.0.1:1');
-    assert.ok(output.includes('Templates:'));
+  it('list shows hint to use themes/templates list', () => {
+    try {
+      run('list');
+      assert.fail('should have thrown');
+    } catch (err) {
+      assert.ok(err.stderr.includes('themes list') || err.stderr.includes('templates list'));
+    }
   });
 
-  it('themes with no args shows configured themes', () => {
-    const output = run('themes');
-    assert.ok(output.includes('No themes configured') || output.includes('theme(s) configured'));
+  it('themes with no args shows usage hint', () => {
+    try {
+      const output = run('themes');
+      assert.ok(output.includes('themes list'));
+    } catch (err) {
+      assert.ok(err.stderr.includes('themes list') || err.stdout.includes('themes list'));
+    }
+  });
+
+  it('profiles list works', () => {
+    const output = run('profiles list');
+    assert.ok(output.includes('profile(s)') || output.includes('No company'));
+  });
+
+  it('presets list works', () => {
+    const output = run('presets list');
+    assert.ok(output.includes('preset(s)') || output.includes('No presets'));
   });
 
   it('create with name but no server still runs', () => {
