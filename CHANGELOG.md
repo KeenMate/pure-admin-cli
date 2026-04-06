@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.0-rc07 (2026-04-06)
+
+### Added
+- **Template operations API** — `template.helper.js` exports technology-specific operations: `addDependency`, `setConfigValue`, `inject`, `addHeadTag`, `addRoute`, `addSidebarItem`. Invoked via `{ "action": "call", "op": "...", "args": [...] }` recipe steps
+- **`create-if` pipeline action** — create files conditionally based on feature flags
+- **Wizard presets** — save wizard selections as named presets in `~/.pureadmin.json` → `createPresets`. Load "Last used" or any saved preset at wizard start to pre-fill all defaults
+- **Condensed wizard** — parallel data loading, combined template select (technology+variant), single multiselect for features, combined theme/variant/mode "Default appearance" picker, summary as `note` box. ~5 prompts instead of 10+
+- **`CLAUDE.md`** — CLI project documentation with pipeline, operations API, icon system
+
+### Changed
+- **Wizard company/profile moved first** — select profile before template
+- **Display name auto-derived** — from company name or app name, no longer prompted separately
+
+---
+
 ## 1.0.0-rc06 (2026-04-04)
 
 ### Added
