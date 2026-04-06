@@ -52,13 +52,9 @@ describe('CLI', () => {
     }
   });
 
-  it('themes with no args shows usage hint', () => {
-    try {
-      const output = run('themes');
-      assert.ok(output.includes('themes list'));
-    } catch (err) {
-      assert.ok(err.stderr.includes('themes list') || err.stdout.includes('themes list'));
-    }
+  it('themes with no args shows help', () => {
+    const output = run('themes');
+    assert.ok(output.includes('list') && output.includes('show'));
   });
 
   it('profiles list works', () => {
