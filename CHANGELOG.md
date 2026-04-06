@@ -1,6 +1,23 @@
 # Changelog
 
-## 1.0.0-rc08 (2026-04-06) [PUBLISHED]
+## 1.0.0-rc09 (2026-04-06) [PUBLISHED]
+
+### Added
+- **Data-driven command definitions** (`lib/commands.js`) — single source of truth for all commands, subcommands, args, flags. Drives help text, validation, and `--llm` output
+- **`pureadmin help <command> [subcommand]`** — detailed help for any command (args, flags, descriptions)
+- **`<resource> help <subcommand>`** — same, e.g. `pureadmin themes help download`
+- **`--llm`** — outputs comprehensive reference document (concepts, commands, context) for LLM consumption
+- **Per-resource help** — `pureadmin themes`, `templates`, `profiles`, `presets` show subcommand list
+
+### Changed
+- **Removed all legacy aliases** — no more top-level `build/pack/publish/info/rm`. All through `themes`/`templates` subcommands
+- **`themes show`** replaces `themes info`
+- **`profiles/presets delete`** replaces `rm`
+- **Unknown flag validation** now reads known flags from command definitions, not hardcoded list
+
+---
+
+## 1.0.0-rc08 (2026-04-06)
 
 ### Added
 - **`profiles list/show/delete`** — manage company profiles and workspace mappings

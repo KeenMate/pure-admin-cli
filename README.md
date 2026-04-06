@@ -6,18 +6,17 @@ Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.i
 
 ## What's New
 
-### v1.0.0-rc08
-- **Interactive wizard** — `pureadmin create` with no args launches a guided setup using @clack/prompts
-- **Icon providers** — `--font-awesome` (default), `--lucide`, `--fluent-ui` with `__ICON:name__` placeholders
-- **Template operations API** — `template.helper.js` exports `addDependency`, `inject`, `addRoute`, `addSidebarItem` etc., called via `{ "action": "call" }` recipe steps
-- **Wizard presets** — save/load create configurations, workspace-based company auto-detection
-- **Consistent CLI structure** — `themes/templates/profiles/presets` with `list`, `show`, `delete` subcommands
+### v1.0.0-rc09
+- **`--llm`** — comprehensive reference document output for LLM consumption (concepts, commands, context)
+- **Data-driven help system** — `lib/commands.js` is single source of truth for all commands, args, flags
+- **`pureadmin help <command> [sub]`** — detailed help for any command or subcommand
+- **Consistent verbs** — all resources use `list`, `show`, `delete`. No legacy aliases.
 
-### v1.0.0-rc07
-- **Condensed wizard** — parallel data loading, combined selects, ~5 prompts instead of 10+
-- **Theme variant + mode selection** — pick default appearance from theme metadata
-- **`create-if` pipeline action** — conditional file creation based on feature flags
-- **CLI split into 14 modules** — `lib/` structure, 33 tests
+### v1.0.0-rc08
+- **Interactive wizard** — `pureadmin create` with no args, guided setup via @clack/prompts
+- **Icon providers** — `--font-awesome`, `--lucide`, `--fluent-ui` with `__ICON:name__` placeholders
+- **Template operations API** — `addDependency`, `inject`, `addRoute`, `addSidebarItem` via recipe steps
+- **Wizard presets + workspace detection** — save/load configs, auto-select company by directory path
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)
