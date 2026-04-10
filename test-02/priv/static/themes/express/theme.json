@@ -1,0 +1,138 @@
+{
+  "name": "Express",
+  "id": "express",
+  "version": "2.3.4",
+  "description": "Bold yellow and red theme inspired by logistics brands",
+  "content": "## Express\n\nA bold, high-energy theme inspired by the visual identity of logistics and delivery brands. Bright yellow headers and red accents make for an unmistakable, action-oriented interface.\n\n### Highlights\n\n- **Yellow header (#FFCC00)** and **red accent (#D40511)** for a striking, branded look\n- **Fira Sans Condensed** bundled font for a compact, industrial feel\n- **Black sidebar** contrasting against light content areas\n- Dark mode included with adjusted contrast\n\n### Usage\n\n```html\n<link rel=\"stylesheet\" href=\"css/express.css\">\n```\n\nDefaults to light mode. Switch with `pa-mode-light` / `pa-mode-dark` on `<body>`. Auto-switching via `prefers-color-scheme` is enabled by default.",
+  "author": "KeenMate",
+  "license": "MIT",
+  "modeCssClass": "pa-mode-{mode}",
+  "variantCssClass": "pa-color-{variant}",
+  "colorVariants": [
+    {
+      "id": "",
+      "name": "Default",
+      "file": "dist/express.css",
+      "modes": [
+        {
+          "id": "light",
+          "name": "Light",
+          "default": true,
+          "colors": {
+            "accent": "#D40511",
+            "background": "#F2F2F2",
+            "surface": "#ffffff",
+            "text": "#333333",
+            "header": "#FFCC00",
+            "sidebar": "#000000"
+          }
+        },
+        {
+          "id": "dark",
+          "name": "Dark",
+          "colors": {
+            "accent": "#D40511",
+            "background": "#1a1a1a",
+            "surface": "#242424",
+            "text": "#ffffff",
+            "header": "#FFCC00",
+            "sidebar": "#1a1a1a"
+          }
+        }
+      ]
+    }
+  ],
+  "features": {
+    "cssVariables": true,
+    "responsiveLayout": true,
+    "compactMode": true,
+    "sidebarCollapse": true,
+    "sidebarIconMode": true,
+    "customFonts": true,
+    "rtlSupport": false,
+    "printStyles": false
+  },
+  "fonts": {
+    "family": "Fira Sans Condensed, Arial Narrow, Arial, sans-serif",
+    "url": "https://fonts.google.com/specimen/Fira+Sans+Condensed",
+    "files": [
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfvtrftV.woff2",
+        "weight": 400,
+        "style": "normal"
+      },
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfLtrftV.woff2",
+        "weight": 400,
+        "style": "normal"
+      },
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfrtrftV.woff2",
+        "weight": 400,
+        "style": "normal"
+      },
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfXtrftV.woff2",
+        "weight": 400,
+        "style": "normal"
+      },
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfntrftV.woff2",
+        "weight": 400,
+        "style": "normal"
+      },
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfjtrftV.woff2",
+        "weight": 400,
+        "style": "normal"
+      },
+      {
+        "family": "Fira Sans Condensed",
+        "src": "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfbtrQ.woff2",
+        "weight": 400,
+        "style": "normal"
+      }
+    ]
+  },
+  "exports": {
+    "css": "./dist/express.css",
+    "scss": "./src/scss/express.scss"
+  },
+  "dependencies": {
+    "core": "^2.3.4"
+  },
+  "manifestVersion": "1.0",
+  "checksums": {
+    "css": "sha256:a7ae66637608fd2ef82260f3805a94e8a5760797b222d34293fb787d9621458f",
+    "scss": "sha256:6587157d97169cb53bffa26013a58e9e40bdfb2ba9ed56f5d17eda940f109707",
+    "assets": {
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfvtrftV.woff2": "sha256:bb846167b1d74f7f21f51700a4443ab65e524878c84555d3d800711c8dc720ab",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfLtrftV.woff2": "sha256:428fc11a6adab7e89d3a97a824d85fd2e639a68c2fb8760b3916b6fed0bc9bcc",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfrtrftV.woff2": "sha256:442629dfe228f7dc85da989e87984ab05566224be8ea39638a7c1792c70e576f",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfXtrftV.woff2": "sha256:0e6c401f9be31f765753d682ed9e24e957adf5cf2bd9abd9286f5f0dc76da79e",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfntrftV.woff2": "sha256:1caed1e8da8089fe144d3bd2b59d7633c3897ff9656e4441c72db2455a42b8c2",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfjtrftV.woff2": "sha256:dad5d1d626322dae075f633347e129c78be440431e20846e75f03173a7288b50",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfbtrQ.woff2": "sha256:5a9980abca3b078a7c67a296f602f48bb043c2167e0e8257addfe2d603643a07"
+    },
+    "files": {
+      "css/express.css": "sha256:a7ae66637608fd2ef82260f3805a94e8a5760797b222d34293fb787d9621458f",
+      "scss/express.scss": "sha256:6587157d97169cb53bffa26013a58e9e40bdfb2ba9ed56f5d17eda940f109707",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfvtrftV.woff2": "sha256:bb846167b1d74f7f21f51700a4443ab65e524878c84555d3d800711c8dc720ab",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfLtrftV.woff2": "sha256:428fc11a6adab7e89d3a97a824d85fd2e639a68c2fb8760b3916b6fed0bc9bcc",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfrtrftV.woff2": "sha256:442629dfe228f7dc85da989e87984ab05566224be8ea39638a7c1792c70e576f",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfXtrftV.woff2": "sha256:0e6c401f9be31f765753d682ed9e24e957adf5cf2bd9abd9286f5f0dc76da79e",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfntrftV.woff2": "sha256:1caed1e8da8089fe144d3bd2b59d7633c3897ff9656e4441c72db2455a42b8c2",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfjtrftV.woff2": "sha256:dad5d1d626322dae075f633347e129c78be440431e20846e75f03173a7288b50",
+      "assets/fonts/wEOhEADFm8hSaQTFG18FErVhsC9x-tarUfbtrQ.woff2": "sha256:5a9980abca3b078a7c67a296f602f48bb043c2167e0e8257addfe2d603643a07",
+      "README.md": "sha256:ea3d67b307487834252b3fb4c6fcab53005a79d429026eef70874071f9d6f8bd"
+    },
+    "metadata": "sha256:e28d6a70a3c87d239721ede3e6c783623aa754d5fdaf76a9726f9fbe3f6cb7c3",
+    "content_sha": "sha256:1834450f6e4f64693ab9113b7876a4ea2275a0103f21452c484f2a84d889a25c"
+  }
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" {PureAdmin.Config.root_html_attrs()}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <.live_title default="KeenMate s.r.o." suffix=" · PureAdmin">
+      {assigns[:page_title]}
+    </.live_title>
+    <%!-- Pure Admin theme (includes core CSS) --%>
+    <link rel="stylesheet" href="/themes/express/css/express.css" />
+    <%!-- data-pa="font-awesome-cdn" --%>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <%!-- /data-pa="font-awesome-cdn" --%>
+    <%!-- data-pa="floating-ui-cdn" --%>
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.6.9"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.13"></script>
+    <%!-- /data-pa="floating-ui-cdn" --%>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
+    </script>
+  </head>
+  <body>
+    <.fouc_prevention_script />
+    {@inner_content}
+  </body>
+</html>

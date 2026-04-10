@@ -16,6 +16,20 @@ module.exports = {
     helpers.setPackageManager(ctx);
   },
 
+  prepareLate(ctx, helpers) {
+    const sidebarItems = helpers.collectSidebarItems(ctx);
+    ctx.placeholders.SIDEBAR_ITEMS = sidebarItems.map(item =>
+      `\t\t\t\t<SidebarItem href="${item.href}" labelText="${item.label}">\n\t\t\t\t\t{#snippet icon()}<i class="${item.icon}"></i>{/snippet}\n\t\t\t\t</SidebarItem>`
+    ).join('\n');
+
+    const themeOpts = helpers.collectThemeOptions(ctx);
+    ctx.placeholders.THEME_OPTIONS = themeOpts.map(t =>
+      `\t\t{ id: '${t.id}', name: '${t.name}', cssPath: '${t.cssPath}' }`
+    ).join(',\n');
+
+    helpers.setThemesConfig(ctx);
+  },
+
   markerFormat: {
     htmlStart: (id) => `<!-- data-pa="${id}" -->`,
     htmlEnd: (id) => `<!-- /data-pa="${id}" -->`,
