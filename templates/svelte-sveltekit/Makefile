@@ -1,9 +1,9 @@
-# {{APP_DISPLAY_NAME}} — Makefile
+# __APP_DISPLAY_NAME__ — Makefile
 
 .PHONY: help setup dev build preview clean themes
 
 help:
-	@echo "{{APP_DISPLAY_NAME}}"
+	@echo "__APP_DISPLAY_NAME__"
 	@echo ""
 	@echo "  make setup      Install dependencies and download themes"
 	@echo "  make dev        Start development server"
@@ -14,20 +14,20 @@ help:
 	@echo ""
 
 setup:
-	{{PM}} install
-	{{PM_EXEC}} pureadmin themes
+	__PM__ install
+	__PM_EXEC__ pureadmin themes
 
 dev:
-	{{PM_RUN}} dev
+	__PM_RUN__ dev
 
 build:
-	{{PM_RUN}} build
+	__PM_RUN__ build
 
 preview:
-	{{PM_RUN}} preview
+	__PM_RUN__ preview
 
 themes:
-	{{PM_EXEC}} pureadmin themes
+	__PM_EXEC__ pureadmin themes
 
 clean:
 	rm -rf .svelte-kit build node_modules

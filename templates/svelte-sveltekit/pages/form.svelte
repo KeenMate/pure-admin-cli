@@ -14,9 +14,9 @@
 	}
 </script>
 
-<Heading level={1}>{{PAGE_LABEL}}</Heading>
+<Heading level={1}>__PAGE_LABEL__</Heading>
 
-<Card titleText="{{PAGE_LABEL}}">
+<Card titleText="__PAGE_LABEL__">
 	<form onsubmit={handleSubmit}>
 		<div class="pa-form-group">
 			<label class="pa-form-label" for="name">Name</label>

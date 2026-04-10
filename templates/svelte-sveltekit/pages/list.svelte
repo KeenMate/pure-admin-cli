@@ -9,7 +9,7 @@
 	];
 </script>
 
-<Heading level={1}>{{PAGE_LABEL}}</Heading>
+<Heading level={1}>__PAGE_LABEL__</Heading>
 
 <Card>
 	<table class="pa-table pa-table--striped pa-table--hover">
@@ -28,7 +28,7 @@
 					<td>{item.name}</td>
 					<td><span class="pa-badge pa-badge--success">{item.status}</span></td>
 					<td>
-						<a href="/{{PAGE_ENTITY}}/{item.id}" class="pa-btn pa-btn--secondary pa-btn--xs">View</a>
+						<a href="/__PAGE_ENTITY__/{item.id}" class="pa-btn pa-btn--secondary pa-btn--xs">View</a>
 					</td>
 				</tr>
 			{/each}

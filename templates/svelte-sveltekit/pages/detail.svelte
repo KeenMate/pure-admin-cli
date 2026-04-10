@@ -5,7 +5,7 @@
 	const id = $derived($page.params.id);
 </script>
 
-<Heading level={1}>{{PAGE_LABEL}} #{id}</Heading>
+<Heading level={1}>__PAGE_LABEL__ #{id}</Heading>
 
 <Card titleText="Details">
 	<div class="pa-fields pa-fields--horizontal pa-fields--bordered">

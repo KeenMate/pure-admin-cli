@@ -3,17 +3,17 @@
 
 	// TODO: Replace with real data source
 	const items = [
-		{ id: 1, name: '{{PAGE_LABEL}} 1', description: 'Description for item 1', status: 'Active' },
-		{ id: 2, name: '{{PAGE_LABEL}} 2', description: 'Description for item 2', status: 'Active' },
-		{ id: 3, name: '{{PAGE_LABEL}} 3', description: 'Description for item 3', status: 'Inactive' },
-		{ id: 4, name: '{{PAGE_LABEL}} 4', description: 'Description for item 4', status: 'Active' },
+		{ id: 1, name: '__PAGE_LABEL__ 1', description: 'Description for item 1', status: 'Active' },
+		{ id: 2, name: '__PAGE_LABEL__ 2', description: 'Description for item 2', status: 'Active' },
+		{ id: 3, name: '__PAGE_LABEL__ 3', description: 'Description for item 3', status: 'Inactive' },
+		{ id: 4, name: '__PAGE_LABEL__ 4', description: 'Description for item 4', status: 'Active' },
 	];
 
 	let selectedId = $state<number | null>(null);
 	const selected = $derived(items.find(i => i.id === selectedId));
 </script>
 
-<Heading level={1}>{{PAGE_LABEL}}</Heading>
+<Heading level={1}>__PAGE_LABEL__</Heading>
 
 <div class="pa-detail-view">
 	<div class="pa-detail-view__main">

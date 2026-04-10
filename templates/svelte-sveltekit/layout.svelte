@@ -16,7 +16,7 @@
 	{{/SETTINGS_PANEL}}import '../app.css';
 
 	{{#SETTINGS_PANEL}}const availableThemes: ThemeOption[] = [
-		{{THEME_OPTIONS}}
+		__THEME_OPTIONS__
 	];
 	{{/SETTINGS_PANEL}}
 
@@ -46,8 +46,8 @@
 
 <PureAdminProvider config={{
 	app: {
-		name: '{{APP_DISPLAY_NAME}}',
-		copyright: '{{COPYRIGHT}}'
+		name: '__APP_DISPLAY_NAME__',
+		copyright: '__COPYRIGHT__'
 	}
 }}>
 	<Layout>
@@ -62,7 +62,7 @@
 
 		<LayoutInner>
 			<Sidebar>
-				{{SIDEBAR_ITEMS}}
+				__SIDEBAR_ITEMS__
 			</Sidebar>
 
 			<LayoutContent>
@@ -76,7 +76,7 @@
 
 		{{#SETTINGS_PANEL}}<SettingsPanel
 			themes={availableThemes}
-			defaultTheme="{{DEFAULT_THEME}}"
+			defaultTheme="__DEFAULT_THEME__"
 		/>{{/SETTINGS_PANEL}}
 		{{#PROFILE_PANEL}}<ProfilePanel bind:show={showProfilePanel} name="User" email="user@example.com" role="User" />{{/PROFILE_PANEL}}
 	</Layout>
