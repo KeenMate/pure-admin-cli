@@ -13,3 +13,4 @@ test/CHANGELOG.md
 test/README.md
 test-cli-check/
 test-*/
+tmp-flag-test/

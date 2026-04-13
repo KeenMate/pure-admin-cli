@@ -33,18 +33,16 @@ describe('CLI', () => {
     }
   });
 
-  it('unknown flags are accepted as passthrough (template-defined features)', () => {
-    // Since the generic --* passthrough was added, unknown flags no longer
-    // error — they're stored as camelCase opts for template-defined features
-    // like --no-ecto. This test verifies the CLI doesn't crash on them.
-    // (The create command itself will fail for other reasons — no template —
-    // but the flag parsing should succeed.)
+  it('unknown flags show error after template features are resolved', () => {
+    // After template features are loaded, the CLI validates that every
+    // passthrough flag matches a declared feature. Bogus flags error.
     try {
-      run('create test --bogus-flag');
+      run('create tmp-flag-test --bogus-flag');
+      assert.fail('should have thrown');
     } catch (err) {
-      // May fail at template resolution, but NOT at flag parsing
       const output = (err.stdout || '') + (err.stderr || '');
-      assert.ok(!output.includes('unknown flag'), 'Should not show "unknown flag" error');
+      assert.ok(output.includes('unknown flag') || output.includes('--bogus-flag'),
+        'Should show error for unrecognized flag');
     }
   });
 
