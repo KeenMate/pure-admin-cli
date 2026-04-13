@@ -1,0 +1,9 @@
+{
+  "url": "https://pureadmin.io",
+  "themesDir": "static/themes",
+  "themes": {
+        "corporate": { "version": "latest", "offline": false },
+    "audi": { "version": "latest", "offline": false },
+    "dark": { "version": "latest", "offline": false }
+  }
+}

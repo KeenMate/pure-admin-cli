@@ -1,0 +1,10 @@
+{
+  "themesDir": "static/themes",
+  "themes": {
+    "audi": {
+      "version": "2.3.0",
+      "content_sha": "sha256:060f79ef8a91f4cbaa810e6b011be6b517a9e2b0d8a66f8ec998e33097d57902",
+      "offline": false
+    }
+  }
+}
