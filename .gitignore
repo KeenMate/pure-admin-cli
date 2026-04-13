@@ -1,2 +1,15 @@
 node_modules/
 .claude/
+
+# Test app outputs
+test/src/
+test/static/
+test/node_modules/
+test/package.json
+test/pnpm-lock.yaml
+test/pureadmin.json
+test/*.config.*
+test/CHANGELOG.md
+test/README.md
+test-cli-check/
+test-*/
