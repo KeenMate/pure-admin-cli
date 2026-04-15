@@ -1,6 +1,16 @@
 # Changelog
 
-## 1.0.0 (2026-04-15) [PUBLISHED] [LATEST]
+## 1.0.1 (2026-04-15)
+
+### Fixed
+- **Config deep merge** — project-level `.pureadmin.json` with `targets` no longer nukes home-level apiKeys. Objects merge recursively; scalars/arrays overwrite.
+- **Icon provider for Phoenix** — `--heroicons` flag + `lib/create/icons.js` with FA/Heroicons/Lucide maps
+- **Makefile ecto-create** — gracefully skips when Ecto not installed (`--no-ecto`)
+- **Endpoint URL display** — patch adds `port: 4000` to Phoenix config so it shows `http://localhost:4000`
+
+---
+
+## 1.0.0 (2026-04-15)
 
 First stable release. Cross-technology template system with Phoenix LiveView support.
 

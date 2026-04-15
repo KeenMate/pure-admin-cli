@@ -6,6 +6,13 @@ Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.i
 
 ## What's New
 
+### v1.0.1
+- **Config deep merge** — project-level `.pureadmin.json` with `targets` no longer nukes home-level apiKeys
+- **`--heroicons`** for Phoenix — Heroicons (built into Phoenix, no CDN needed) as alternative to Font Awesome
+- **`lib/create/icons.js`** — extracted icon maps (FA, Heroicons, Lucide) with `resolveIconAttr` and `resolveIconMarkup` for templates
+- **Makefile ecto-create** — gracefully skips when Ecto not installed (`--no-ecto` apps)
+- **Endpoint URL display** — Phoenix config patched to show `http://localhost:4000` instead of `http://localhost`
+
 ### v1.0.0
 
 First stable release.
