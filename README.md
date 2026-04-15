@@ -6,24 +6,34 @@ Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.i
 
 ## What's New
 
-### v1.0.0-rc11
-- **Named targets** — `~/.pureadmin.json` supports `targets: { production: { url, apiKey }, local: { url, apiKey } }` with `defaultTarget`. No more `--server URL --api-key KEY` separately. Just `--server local` or default to production
-- **Phoenix LiveView template** — `pureadmin create my-app --template phoenix-liveview` scaffolds a full Phoenix app with PureAdmin layout, sidebar, config, themes, and profile panel
-- **`prepare(ctx, helpers)` + `prepareLate(ctx, helpers)`** — template lifecycle hooks. Templates declare which identifier preparators they need (e.g. Phoenix calls `setAppIdSnake`, Svelte doesn't)
-- **Data collectors** — `collectSidebarItems`, `collectNavbarItems`, `collectProfileItems`, `collectBrand`, `collectFooter`, `collectThemeOptions`, `collectCreateSummary`. Return technology-agnostic objects; templates render their own markup
-- **Project Info card** — generated home page shows features (enabled/disabled badges), themes, and the exact `npx @keenmate/pureadmin create ...` command used
-- **`ctx` pipeline** — explicit `ctx.placeholders` dictionary replaces closure-captured locals. All state flows through `ctx`
-- **`lib/create/naming.js`** — pure testable case-conversion: `toSnakeCase`, `toPascalCase`, `toKebabCase`, `toCamelCase`, `toTitleCase`
-- **`lib/create/preparators.js`** — 20 exported helpers including 6 collectors, identifier setters, and low-level `set`/`derive`
-- **New placeholders** — `__APP_MODULE__` (PascalCase), `__APP_ID_SNAKE__` (snake_case), `__PAGE_MODULE__`, `__CREATE_COMMAND__`, `__SCAFFOLD_FLAGS__`
-- **`scaffold.runFirst`** — run `mix phx.new` / `rails new` before copying template overrides
-- **Single `__VAR__` format** — dropped legacy `{{VAR}}` syntax
-- **Generic `--*` flag passthrough** — template-defined flags like `--no-ecto` work without CLI changes
-- **Windows ZIP packer fix** — strip directory entries that pureadmin.io integrity checker rejects
-- **`defaultPages: []`** — templates ship their own home page; page generator doesn't overwrite it
+### v1.0.0
 
-### v1.0.0-rc10
-- Same features as rc11 but missing the named targets system
+First stable release.
+
+#### Cross-technology template system
+- **Phoenix LiveView template** — `pureadmin create my-app --template phoenix-liveview` scaffolds a full Phoenix app with PureAdmin layout, sidebar, config, themes, profile panel, and settings panel
+- **Icon providers** — Font Awesome (default) + Heroicons for Phoenix (`--heroicons`), Lucide for Svelte (`--lucide`). `lib/create/icons.js` with canonical icon maps and per-provider resolution
+- **`scaffold.runFirst`** — run `mix phx.new` / `rails new` / any generator before copying template overrides
+- **`__SCAFFOLD_FLAGS__`** — feature-conditional scaffold flags (e.g. `--no-ecto` when ecto feature disabled)
+- **Flag validation** — unknown `--flags` validated against template's declared features after recipe loads. Catches typos like `--no-ectp`
+
+#### Template pipeline
+- **`prepare(ctx, helpers)` + `prepareLate(ctx, helpers)`** — template lifecycle hooks. Templates declare which identifier preparators they need
+- **Data collectors** — `collectSidebarItems`, `collectNavbarItems`, `collectProfileItems`, `collectBrand`, `collectFooter`, `collectThemeOptions`, `collectCreateSummary`. Return technology-agnostic objects; templates render their own markup
+- **`ctx` pipeline** — explicit `ctx.placeholders` dictionary. All state flows through `ctx`, no closure magic
+- **Project Info card** — generated home page shows features, themes, and the exact CLI command used
+
+#### Modules
+- **`lib/create/naming.js`** — pure testable case-conversion: `toSnakeCase`, `toPascalCase`, `toKebabCase`, `toCamelCase`, `toTitleCase`
+- **`lib/create/preparators.js`** — 25+ exported helpers including collectors, setters, icon resolvers
+- **`lib/create/features.js`** — `resolveFeatures`, `buildScaffoldFlags`, `processTemplatePoints`
+- **`lib/create/icons.js`** — icon maps (FA, Heroicons, Lucide) and resolution functions
+- **97 unit tests** — naming, preparators, features all covered
+
+#### Configuration
+- **Named targets** — `targets: { production: { url, apiKey }, local: { url, apiKey } }` with `defaultTarget`. Just `--server local` instead of raw URLs
+- **Single `__VAR__` format** — dropped legacy `{{VAR}}` syntax
+- **New placeholders** — `__APP_MODULE__`, `__APP_ID_SNAKE__`, `__PAGE_MODULE__`, `__CREATE_COMMAND__`, `__SCAFFOLD_FLAGS__`, `__ICON_CDN__`, `__ICON_DASHBOARD__`
 
 ### v1.0.0-rc09
 - **`--llm`** — comprehensive reference document output for LLM consumption (concepts, commands, context)

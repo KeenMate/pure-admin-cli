@@ -1,6 +1,32 @@
 # Changelog
 
-## 1.0.0-rc09 (2026-04-06) [PUBLISHED] [LATEST]
+## 1.0.0 (2026-04-15) [PUBLISHED] [LATEST]
+
+First stable release. Cross-technology template system with Phoenix LiveView support.
+
+### Added
+- **Phoenix LiveView template** (`--template phoenix-liveview`) — full Phoenix app with PureAdmin layout, sidebar, navbar, footer, profile panel, settings panel, toast container, page context, Makefile
+- **Icon provider system** — `lib/create/icons.js` with FA + Heroicons for Phoenix (`--heroicons`), Lucide for Svelte (`--lucide`). Canonical icon maps, per-provider resolution
+- **Template lifecycle** — `prepare(ctx, helpers)` + `prepareLate(ctx, helpers)`. Templates declare which preparators they need
+- **Data collectors** — `collectSidebarItems/NavbarItems/ProfileItems/Brand/Footer/ThemeOptions/CreateSummary`. Technology-agnostic objects; templates render their own markup
+- **`ctx` pipeline** — explicit `ctx.placeholders` dictionary, no closure magic
+- **Extracted modules** — `naming.js` (case conversion), `preparators.js` (25+ helpers), `features.js` (resolve/scaffold/points), `icons.js` (maps + resolution)
+- **Named targets** — `targets: { production: { url, apiKey }, local: { ... } }` in config
+- **`scaffold.runFirst`** — run `mix phx.new` / `rails new` before template overrides
+- **Flag validation** — unknown `--flags` checked against template features, catches typos
+- **New placeholders** — `__APP_MODULE__`, `__APP_ID_SNAKE__`, `__PAGE_MODULE__`, `__CREATE_COMMAND__`, `__SCAFFOLD_FLAGS__`, `__ICON_CDN__`
+- **Project Info card** — generated home pages show features, themes, CLI command
+- **97 unit tests**
+
+### Changed
+- Single `__VAR__` format (dropped `{{VAR}}`)
+- Default template: `svelte-sveltekit`
+- Strict `prepare()` requirement for all templates
+- Windows ZIP packer strips directory entries
+
+---
+
+## 1.0.0-rc09 (2026-04-06)
 
 ### Added
 - **Data-driven command definitions** (`lib/commands.js`) — single source of truth for all commands, subcommands, args, flags. Drives help text, validation, and `--llm` output
