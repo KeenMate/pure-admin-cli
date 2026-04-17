@@ -4,56 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { copyDirSync, deepMerge, sha256File, sha256String } = require('../lib/files');
-
-describe('sha256String', () => {
-  it('returns sha256: prefixed hash', () => {
-    const result = sha256String('hello');
-    assert.match(result, /^sha256:[a-f0-9]{64}$/);
-  });
-
-  it('is deterministic', () => {
-    assert.strictEqual(sha256String('test'), sha256String('test'));
-  });
-
-  it('different inputs produce different hashes', () => {
-    assert.notStrictEqual(sha256String('a'), sha256String('b'));
-  });
-});
-
-describe('sha256File', () => {
-  it('hashes a real file', () => {
-    const result = sha256File(path.join(__dirname, '..', 'package.json'));
-    assert.match(result, /^sha256:[a-f0-9]{64}$/);
-  });
-});
-
-describe('deepMerge', () => {
-  it('merges flat objects', () => {
-    const result = deepMerge({ a: 1 }, { b: 2 });
-    assert.deepStrictEqual(result, { a: 1, b: 2 });
-  });
-
-  it('overwrites scalar values', () => {
-    const result = deepMerge({ a: 1 }, { a: 2 });
-    assert.deepStrictEqual(result, { a: 2 });
-  });
-
-  it('deep merges nested objects', () => {
-    const result = deepMerge(
-      { a: { x: 1, y: 2 } },
-      { a: { y: 3, z: 4 } }
-    );
-    assert.deepStrictEqual(result, { a: { x: 1, y: 3, z: 4 } });
-  });
-
-  it('returns merged result', () => {
-    const target = { a: 1 };
-    const result = deepMerge(target, { b: 2 });
-    assert.strictEqual(result.a, 1);
-    assert.strictEqual(result.b, 2);
-  });
-});
+const { copyDirSync, setExtractor } = require('../lib/helpers/files');
 
 describe('copyDirSync', () => {
   let tmpDir;
@@ -90,5 +41,25 @@ describe('copyDirSync', () => {
 
     assert.ok(fs.existsSync(path.join(dest, 'a.txt')));
     assert.ok(!fs.existsSync(path.join(dest, 'node_modules')));
+  });
+});
+
+describe('setExtractor', () => {
+  it('accepts all valid names', () => {
+    for (const name of ['auto', 'unzip', 'tar', '7zip', '7z']) {
+      assert.doesNotThrow(() => setExtractor(name));
+    }
+    setExtractor('auto'); // restore default for other tests
+  });
+
+  it('throws on unknown name with list of valid options', () => {
+    assert.throws(() => setExtractor('winzip'), /Unknown extractor "winzip"\. Valid: auto, unzip, tar, 7zip, 7z/);
+  });
+
+  it('ignores falsy values (no-op)', () => {
+    // cli.js passes config.extractor which is undefined when unset — must not throw
+    assert.doesNotThrow(() => setExtractor(undefined));
+    assert.doesNotThrow(() => setExtractor(null));
+    assert.doesNotThrow(() => setExtractor(''));
   });
 });
