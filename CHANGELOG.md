@@ -19,6 +19,10 @@
 ### Removed
 - **Theme-manifest default-mode fallback in `create`** — the block that fetched `/api/themes/<id>` to read the theme's default mode is gone. `auto` handles the "don't force a mode" case without a network round-trip.
 
+### Fixed
+- **Unknown `--server <name>` now errors early.** Previously, `--server development` (with no "development" target defined) was silently treated as a raw URL — the CLI proceeded happily until it failed at upload time with cryptic network errors. Now `resolveTarget` distinguishes URL vs name by checking for `://` and throws `Unknown server target "X". Available targets: ...` before any command runs.
+- **Misspelled `config.defaultTarget` no longer falls through silently.** Previously, a typo in `defaultTarget` would silently drop to the `https://pureadmin.io` fallback, risking unintended publishes to production. Now it throws with the available target list.
+
 ---
 
 ## 1.0.1 (2026-04-15)
