@@ -15,6 +15,9 @@
 - **Configurable HTTP timeouts** — `pureadmin.json` / `~/.pureadmin.json` now honors optional top-level `"timeout"` (default 10000 ms, applies to API fetches) and `"downloadTimeout"` (default 30000 ms, applies to theme/template ZIP downloads). Useful for slow networks or local dev servers that are slower to respond.
 - **Configurable zip extractor** — new optional `"extractor"` config field: `"unzip"`, `"tar"`, `"7zip"` (alias `"7z"`), or `"auto"` (default — tries unzip, falls back to tar). Set it in `.pureadmin.json` when your environment uses a specific tool. Unknown values fail fast at startup with the list of valid names; named extractors error clearly if the binary isn't on PATH.
 - **`extractZip` renamed from `extractThemeZip`** — the function is fully generic (used to unpack theme *and* template ZIPs). The old name was misleading.
+- **Markdown rendering in detail views.** `themes show <id>` and the new `templates show <id>` now render the manifest's `content` field (rich markdown with headings, lists, inline code, etc.) using `marked` + `marked-terminal`. Reflow to 80 columns, indented 2 spaces to align with the metadata block above.
+- **New `templates show` command** — mirrors `themes show`: compact metadata (id, version, technology/variant, author, license, tags) on top, rendered markdown description below.
+- **`marked` + `marked-terminal` runtime dependencies** added (~150KB) for the above.
 
 ### Changed
 - **`themes validate` is now a hard correctness gate.** Checks asset manifest integrity, required `--pa-*` CSS variables, and color slot definitions. Exits non-zero on any error so it works as a CI gate. The previous WCAG/border-radius checks moved to `themes lint`.

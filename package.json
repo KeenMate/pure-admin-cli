@@ -35,6 +35,8 @@
   ],
   "dependencies": {
     "@clack/prompts": "^1.2.0",
-    "archiver": "^7.0.0"
+    "archiver": "^7.0.0",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0"
   }
 }
