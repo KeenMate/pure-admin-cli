@@ -18,6 +18,8 @@
 - **Markdown rendering in detail views.** `themes show <id>` and the new `templates show <id>` now render the manifest's `content` field (rich markdown with headings, lists, inline code, etc.) using `marked` + `marked-terminal`. Reflow to 80 columns, indented 2 spaces to align with the metadata block above.
 - **New `templates show` command** — mirrors `themes show`: compact metadata (id, version, technology/variant, author, license, tags) on top, rendered markdown description below.
 - **`marked` + `marked-terminal` runtime dependencies** added (~150KB) for the above.
+- **Mutating filesystem ops centralized in `lib/helpers/files.js`.** Five new wrappers — `mkdir`, `writeFile`, `removeFile`, `removeDir`, `copyFile` — cover all 42 mutating `fs.*Sync` call sites across the CLI. They provide ergonomic defaults (mkdir is always recursive; removeDir is always recursive + force, matching every existing usage) and emit a one-line dim trace `[fs] <action> <path>` when verbose mode is on. Read-only ops (`readFileSync`, `existsSync`, `statSync`, `readdirSync`) are intentionally NOT wrapped — they don't mutate state and tracing them would drown out the useful output.
+- **Verbose mode now reachable from config too.** Existing `--verbose` / `-v` CLI flag still works; you can also set `"verbose": true` in `pureadmin.json` / `~/.pureadmin.json`. The CLI flag wins when both are set.
 
 ### Changed
 - **`themes validate` is now a hard correctness gate.** Checks asset manifest integrity, required `--pa-*` CSS variables, and color slot definitions. Exits non-zero on any error so it works as a CI gate. The previous WCAG/border-radius checks moved to `themes lint`.
