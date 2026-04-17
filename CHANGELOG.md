@@ -10,6 +10,8 @@
 - **Provenance tracking for `create`** — every resolved input (company, template, themes, default theme, display name, copyright, icon provider, default mode) now records where it came from (CLI flag / preset / company / workspace default / built-in fallback).
 - **`ORG_PROFILE` and `APP_PROFILE` README placeholders** — new `setProfiles` preparator (`lib/create/preparators.js`) renders the raw company profile and the resolved app inputs as markdown bullet lists, each value annotated with a muted `_(source)_` suffix. Templates can drop these placeholders into their generated README.
 - **`--default-mode` validation** — CLI rejects values outside `light|dark|auto` before the pipeline starts.
+- **`templates validate` (new command)** — verifies manifest integrity before publish. Checks required fields (id, name, version), required structure (`template/` dir), and cross-checks declared checksums against actual file contents. Catches the stale-manifest case that causes server-side upload rejections.
+- **`archiver` runtime dependency** — added to enable cross-platform zip creation in `templates pack` (previously relied on platform-specific PowerShell + Python fallbacks).
 
 ### Changed
 - **`themes validate` is now a hard correctness gate.** Checks asset manifest integrity, required `--pa-*` CSS variables, and color slot definitions. Exits non-zero on any error so it works as a CI gate. The previous WCAG/border-radius checks moved to `themes lint`.
@@ -22,6 +24,8 @@
 ### Fixed
 - **Unknown `--server <name>` now errors early.** Previously, `--server development` (with no "development" target defined) was silently treated as a raw URL — the CLI proceeded happily until it failed at upload time with cryptic network errors. Now `resolveTarget` distinguishes URL vs name by checking for `://` and throws `Unknown server target "X". Available targets: ...` before any command runs.
 - **Misspelled `config.defaultTarget` no longer falls through silently.** Previously, a typo in `defaultTarget` would silently drop to the `https://pureadmin.io` fallback, risking unintended publishes to production. Now it throws with the available target list.
+- **`templates pack` now recomputes checksums at pack time.** Previously, the CLI shipped whatever `checksums` block `template.json` had on disk — if files in `template/` or `pages/` had been edited since the last manual run of `scripts/update-checksums.js`, the server would reject the upload with "checksum mismatch". Pack now walks the template directory, hashes every file, computes metadata + summary shas, and injects an enriched `template.json` into the zip. No external script required; no side effects on the source tree.
+- **`templates pack` now uses `archiver` instead of PowerShell/`zip`/Python.** Removes the platform-specific fallback dance and the Python-based directory-entry stripping workaround. Same module already used by `themes pack`.
 
 ---
 
