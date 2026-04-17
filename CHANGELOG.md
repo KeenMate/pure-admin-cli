@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.1.0] - 2026-04-17 [PUBLISHED]
+
+### Added
+- **Asset manifest audit** (`lib/asset-manifest.js`) — cross-checks `assets/` folder, `theme.json` declarations, and CSS `url()` references. Catches the case where CSS uses a font that isn't listed in `theme.json` (file gets omitted from the zip → 404 after publish).
+- **`themes pack` blocks bad packs** — undeclared CSS asset references and manifest-declared files missing on disk now stop the zip with a red error pointing to the fix. Files in `assets/` not declared in `theme.json` are flagged as yellow warnings.
+- **`themes lint` (new command)** — quality/accessibility recommendations: WCAG contrast ratios for buttons and color slots, hardcoded border-radius detection. Advisory only; never exits non-zero.
+- **Auto mode** — `--default-mode auto` (and new default for fresh apps) follows the OS `prefers-color-scheme` at runtime. Wizard offers an "Auto — follow OS" option per theme alongside the theme's declared modes.
+- **Provenance tracking for `create`** — every resolved input (company, template, themes, default theme, display name, copyright, icon provider, default mode) now records where it came from (CLI flag / preset / company / workspace default / built-in fallback).
+- **`ORG_PROFILE` and `APP_PROFILE` README placeholders** — new `setProfiles` preparator (`lib/create/preparators.js`) renders the raw company profile and the resolved app inputs as markdown bullet lists, each value annotated with a muted `_(source)_` suffix. Templates can drop these placeholders into their generated README.
+- **`--default-mode` validation** — CLI rejects values outside `light|dark|auto` before the pipeline starts.
+
+### Changed
+- **`themes validate` is now a hard correctness gate.** Checks asset manifest integrity, required `--pa-*` CSS variables, and color slot definitions. Exits non-zero on any error so it works as a CI gate. The previous WCAG/border-radius checks moved to `themes lint`.
+- **Default mode flipped from `dark` to `auto`.** New apps follow OS appearance by default instead of forcing dark.
+- **Reproducible `create` command includes more flags.** The "run this to recreate the app" line now emits `--name`, `--default-mode`, `--default-variant`, and the resolved `--company` (workspace-auto-detected) so the command works outside the matched workspace directory.
+
+### Removed
+- **Theme-manifest default-mode fallback in `create`** — the block that fetched `/api/themes/<id>` to read the theme's default mode is gone. `auto` handles the "don't force a mode" case without a network round-trip.
+
+---
+
 ## 1.0.1 (2026-04-15)
 
 ### Fixed

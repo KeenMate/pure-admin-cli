@@ -6,53 +6,19 @@ Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.i
 
 ## What's New
 
+### v1.1.0
+- **Asset manifest audit** — `themes pack` and `themes validate` now cross-check `assets/` folder, `theme.json` declarations, and CSS `url()` refs. Catches the case where a font is used in CSS but not listed in the manifest (would 404 after publish).
+- **`themes lint`** (new command) — quality/accessibility recommendations: WCAG contrast ratios for buttons and color slots, hardcoded border-radius detection. Advisory only; never exits non-zero.
+- **`themes validate` is now a hard correctness gate** — checks asset manifest, required `--pa-*` CSS variables, color slot definitions. Exits non-zero on errors so it works in CI. Soft checks (contrast, hardcoded values) moved to `themes lint`.
+- **Auto theme mode** — new apps default to `--default-mode auto`, which follows the OS `prefers-color-scheme` at runtime instead of being locked to dark. Wizard offers an "Auto — follow OS" option per theme.
+- **Provenance-annotated profiles** — `create` now tracks where every resolved input came from (CLI flag / preset / company / workspace / default). New `ORG_PROFILE` and `APP_PROFILE` README placeholders render the company profile and resolved app inputs as markdown bullet lists with muted `_(source)_` suffixes.
+
 ### v1.0.1
 - **Config deep merge** — project-level `.pureadmin.json` with `targets` no longer nukes home-level apiKeys
 - **`--heroicons`** for Phoenix — Heroicons (built into Phoenix, no CDN needed) as alternative to Font Awesome
 - **`lib/create/icons.js`** — extracted icon maps (FA, Heroicons, Lucide) with `resolveIconAttr` and `resolveIconMarkup` for templates
 - **Makefile ecto-create** — gracefully skips when Ecto not installed (`--no-ecto` apps)
 - **Endpoint URL display** — Phoenix config patched to show `http://localhost:4000` instead of `http://localhost`
-
-### v1.0.0
-
-First stable release.
-
-#### Cross-technology template system
-- **Phoenix LiveView template** — `pureadmin create my-app --template phoenix-liveview` scaffolds a full Phoenix app with PureAdmin layout, sidebar, config, themes, profile panel, and settings panel
-- **Icon providers** — Font Awesome (default) + Heroicons for Phoenix (`--heroicons`), Lucide for Svelte (`--lucide`). `lib/create/icons.js` with canonical icon maps and per-provider resolution
-- **`scaffold.runFirst`** — run `mix phx.new` / `rails new` / any generator before copying template overrides
-- **`__SCAFFOLD_FLAGS__`** — feature-conditional scaffold flags (e.g. `--no-ecto` when ecto feature disabled)
-- **Flag validation** — unknown `--flags` validated against template's declared features after recipe loads. Catches typos like `--no-ectp`
-
-#### Template pipeline
-- **`prepare(ctx, helpers)` + `prepareLate(ctx, helpers)`** — template lifecycle hooks. Templates declare which identifier preparators they need
-- **Data collectors** — `collectSidebarItems`, `collectNavbarItems`, `collectProfileItems`, `collectBrand`, `collectFooter`, `collectThemeOptions`, `collectCreateSummary`. Return technology-agnostic objects; templates render their own markup
-- **`ctx` pipeline** — explicit `ctx.placeholders` dictionary. All state flows through `ctx`, no closure magic
-- **Project Info card** — generated home page shows features, themes, and the exact CLI command used
-
-#### Modules
-- **`lib/create/naming.js`** — pure testable case-conversion: `toSnakeCase`, `toPascalCase`, `toKebabCase`, `toCamelCase`, `toTitleCase`
-- **`lib/create/preparators.js`** — 25+ exported helpers including collectors, setters, icon resolvers
-- **`lib/create/features.js`** — `resolveFeatures`, `buildScaffoldFlags`, `processTemplatePoints`
-- **`lib/create/icons.js`** — icon maps (FA, Heroicons, Lucide) and resolution functions
-- **97 unit tests** — naming, preparators, features all covered
-
-#### Configuration
-- **Named targets** — `targets: { production: { url, apiKey }, local: { url, apiKey } }` with `defaultTarget`. Just `--server local` instead of raw URLs
-- **Single `__VAR__` format** — dropped legacy `{{VAR}}` syntax
-- **New placeholders** — `__APP_MODULE__`, `__APP_ID_SNAKE__`, `__PAGE_MODULE__`, `__CREATE_COMMAND__`, `__SCAFFOLD_FLAGS__`, `__ICON_CDN__`, `__ICON_DASHBOARD__`
-
-### v1.0.0-rc09
-- **`--llm`** — comprehensive reference document output for LLM consumption (concepts, commands, context)
-- **Data-driven help system** — `lib/commands.js` is single source of truth for all commands, args, flags
-- **`pureadmin help <command> [sub]`** — detailed help for any command or subcommand
-- **Consistent verbs** — all resources use `list`, `show`, `delete`. No legacy aliases.
-
-### v1.0.0-rc08
-- **Interactive wizard** — `pureadmin create` with no args, guided setup via @clack/prompts
-- **Icon providers** — `--font-awesome`, `--lucide`, `--fluent-ui` with `__ICON:name__` placeholders
-- **Template operations API** — `addDependency`, `inject`, `addRoute`, `addSidebarItem` via recipe steps
-- **Wizard presets + workspace detection** — save/load configs, auto-select company by directory path
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)
