@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **`themes add --path <dir>`** — register a theme from a local directory instead of fetching from the API. Slug is read from `<dir>/theme.json`'s `id`; if a slug arg is also passed, it's validated against the manifest. The directory contents are snapshotted to `<projectRoot>/<themesDir>/<slug>/` (excluding `.git` / `node_modules`); the destination is wiped first so leftover files from a prior version don't linger. Persisted in `pureadmin.json` as `{ "path": "...", "version": "...", "offline": false }`.
+- **`themes update` re-snapshots local-path themes** from disk instead of hitting the API. `theme.json`'s version becomes the new entry version on each refresh. Lets devs iterate on a sibling theme repo (e.g. `../pure-admin-themes/audi`) and pull changes into the consuming app with a single command.
+- **`themes list --local` shows path-based themes distinctly** — entries with a `path` field render as `local: <path>` instead of the online/offline label, so you can see at a glance which themes are dev-iteration sources vs. published downloads.
+
+### Fixed
+- **`loadProjectConfig` now merges `.pureadmin.json` over `pureadmin.json`** for reads. Previously only `pureadmin.json` was loaded, so all `themes` commands silently ignored entries declared in the local override file (`themes update` would print "No themes configured" even when `.pureadmin.json` listed them). Saves still target `pureadmin.json` only — overrides stay in `.pureadmin.json` as intended. Brings `loadProjectConfig` in line with the global `loadConfig` layering.
+
 ## [1.2.0] - 2026-04-26 [PUBLISHED]
 
 ### Added
