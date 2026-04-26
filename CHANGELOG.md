@@ -15,7 +15,7 @@
 - **Upload error handling.** Both publish commands now distinguish 200 / unchanged / 426 / other-error and report each with its own status line + colored label.
 - **`themes download` error message.** When invoked without a slug, the error now points to `themes add <slug>` / `themes update` for project-driven flows (those use `pureadmin.json`) instead of leaving users to wonder why the project file wasn't picked up.
 
-## [1.1.0] - 2026-04-17 [PUBLISHED]
+## [1.1.0] - 2026-04-17 [UNPUBLISHED]
 
 ### Added
 - **Asset manifest audit** (`lib/asset-manifest.js`) — cross-checks `assets/` folder, `theme.json` declarations, and CSS `url()` references. Catches the case where CSS uses a font that isn't listed in `theme.json` (file gets omitted from the zip → 404 after publish).
