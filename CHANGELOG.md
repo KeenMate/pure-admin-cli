@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0] - 2026-04-26 [PUBLISHED]
+
+### Added
+- **Symmetric `if: "feature-id"` condition on recipe steps** in `lib/commands/create.js`. Previously only `unless:` was supported (skip when feature enabled); now `if:` skips when feature is disabled. Universal — applies to `delete`, `patch`, `append`, `prepend`, `create`, `json-merge`, `call`. Lets opt-in features (e.g. Phoenix template's new `--form-demo`) attach their own patches and conditional creates without abusing `create-if` (which is restricted to file creation).
+- **Bidirectional CLI ↔ server version negotiation.** The CLI now sends `X-Pureadmin-Cli-Version` on every API request (Node `http.get` and both `curl` upload sites). The server (pure-admin-io) advertises four headers on every API response: `X-Pureadmin-Server-Version`, `X-Pureadmin-Cli-Latest`, `X-Pureadmin-Cli-Min-Write`, `X-Pureadmin-Cli-Max-Compat`. Server-side values live in `config :pure_admin_io, :cli_compat` and can be overridden at boot via `PUREADMIN_CLI_LATEST` / `PUREADMIN_CLI_MIN_WRITE` / `PUREADMIN_CLI_MAX_COMPAT` env vars (no recompile).
+- **Soft upgrade nudge on reads.** When the server's `Cli-Latest` is newer than this CLI, a one-line `▲ A newer pureadmin is available` notice prints after the command finishes. Throttled to once per 24 h via `~/.pureadmin/.last-update-check`.
+- **Hard upgrade gate on writes.** `themes publish` / `templates publish` surface a `426 Upgrade Required` response from the server (when this CLI is below the server's `Cli-Min-Write`), printing the server's `message` and the `npm i -g @keenmate/pureadmin@latest` hint instead of the previous mute "failed".
+- **Server-too-old detection (CLI side).** When this CLI is newer than the server's `Cli-Max-Compat`, the very first response triggers a hard fail with a downgrade hint pointing to a CLI version compatible with that server. Prevents footguns when developing against an outdated local pureadmin.io instance.
+- **`lib/helpers/upload.js`** — shared `curlUpload({ url, apiKey, fieldName, filePath })` + `parseCurlIncluded(raw)`. Replaces the duplicated `curl -sf` blocks in `theme-publish.js` and `templates.js` with one helper that captures status + headers + body (so 4xx/5xx responses surface their messages instead of being swallowed by `-f`).
+- **`lib/version-check.js`** — single source of truth for the version-negotiation contract: `recordResponse(headers)` (called by `http.js` and `upload.js`), `printPendingNudge()` (wired into `lib/cli.js` `finally`), `getCliVersion()`. Includes a tolerant semver compare that handles `1.2.x`-style ranges and prerelease suffixes.
+
+### Changed
+- **Upload error handling.** Both publish commands now distinguish 200 / unchanged / 426 / other-error and report each with its own status line + colored label.
+- **`themes download` error message.** When invoked without a slug, the error now points to `themes add <slug>` / `themes update` for project-driven flows (those use `pureadmin.json`) instead of leaving users to wonder why the project file wasn't picked up.
+
 ## [1.1.0] - 2026-04-17 [PUBLISHED]
 
 ### Added
@@ -21,6 +36,15 @@
 - **Mutating filesystem ops centralized in `lib/helpers/files.js`.** Five new wrappers — `mkdir`, `writeFile`, `removeFile`, `removeDir`, `copyFile` — cover all 42 mutating `fs.*Sync` call sites across the CLI. They provide ergonomic defaults (mkdir is always recursive; removeDir is always recursive + force, matching every existing usage) and emit a one-line dim trace `[fs] <action> <path>` when verbose mode is on. Read-only ops (`readFileSync`, `existsSync`, `statSync`, `readdirSync`) are intentionally NOT wrapped — they don't mutate state and tracing them would drown out the useful output.
 - **Verbose mode now reachable from config too.** Existing `--verbose` / `-v` CLI flag still works; you can also set `"verbose": true` in `pureadmin.json` / `~/.pureadmin.json`. The CLI flag wins when both are set.
 - **`templates pack` no longer emits directory entries in zips.** The previous switch to `archiver.directory()` re-introduced explicit dir entries (`template/lib/`, `template/src/`, etc.), which the server's integrity check rejects with "file in ZIP but not declared". Pack now walks the tree and adds files individually via `archive.file()`, matching the server's per-file manifest model. The walker (`walkFiles`) is shared with checksum computation so both views of the tree stay in sync.
+- **`cliDisable` feature field** — companion to the existing `cli` field in `template.json` features. `cli: "--foo"` enables a feature when the flag is passed; `cliDisable: "--bare"` *disables* a feature when the flag is passed. Lets templates expose meaningful opt-out flags without forcing the `--no-foo` naming convention. Used by the `demo-pages` feature in all three official templates.
+- **Universal `unless: "feature-id"` on recipe steps.** Any recipe step (`delete`, `patch`, `append`, `prepend`, `json-merge`, `call`, etc.) can now skip itself when a named feature is enabled. Lives at the top of the steps loop in `create.js` so all action types get the gate for free. Templates use this to delete demo content when `--bare` flips the corresponding feature off.
+- **`delete` recipe action handles directories.** Detects whether the path is a file or a directory and dispatches to `removeFile` or `removeDir` accordingly. Templates can now `{ "action": "delete", "path": "src/routes/users" }` to drop an entire route folder.
+- **`--template-path` prefers the local `template.json`.** When iterating on a template via `--template-path /path/to/template`, the CLI now loads that path's `template.json` first instead of always hitting the API. API and bundled-CLI templates remain the fallback. Edits to a local template.json take effect on the next `create` run with no publish step needed.
+- **"Generated pages" label** in the README App Profile + Project Info card (was "Pages"). The old label read as "all pages in the app" but only ever meant "pages from `--pages` flag-driven generators" — the rename makes the field's scope honest.
+- **"Demo pages" row** in the README App Profile + Project Info card. Surfaces the bundled scaffold routes (Users, Settings) gated by the optional `demo-pages` template feature. Reads "Users, Settings (pass --bare to remove)" by default; "none (--bare)" when the feature was disabled. Skipped entirely when the template doesn't declare the feature.
+
+### Fixed
+- **`__ICON:*` placeholders no longer emit Font Awesome `<i>` tags when no icon flag is set.** Previously `iconProvider` silently defaulted to `'font-awesome'` even with no `--font-awesome` flag, so the resolver emitted `<i class="fa-solid fa-X">` tags but the FA stylesheet never loaded — invisible empty boxes in every generated app. Now `iconProvider = 'none'` when no flag/preset/company chose one, and `resolveIconMarkup` / `resolveIconAttr` return empty strings for `'none'`. The `collectCreateSummary` workaround that masked the lie for display ("font-awesome but actually none") is removed too.
 
 ### Changed
 - **`themes validate` is now a hard correctness gate.** Checks asset manifest integrity, required `--pa-*` CSS variables, and color slot definitions. Exits non-zero on any error so it works as a CI gate. The previous WCAG/border-radius checks moved to `themes lint`.

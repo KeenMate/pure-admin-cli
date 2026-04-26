@@ -4,21 +4,19 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
-## What's New
+## What's New in v1.2.0
+- **CLI ↔ server version negotiation** — `pureadmin` and pureadmin.io now exchange version metadata on every API request. A one-line nudge prints (throttled once per 24h) when a newer CLI is on npm, and `themes publish` / `templates publish` fail with a clear `npm i -g @keenmate/pureadmin@latest` hint when the server requires a newer CLI than you have installed.
+- **Server-too-old detection** — when this CLI is newer than the server's max-compat range (e.g. local dev pureadmin.io vs. a current published CLI), the very first response triggers a hard fail with a `npm i -g @keenmate/pureadmin@<compat>` downgrade hint. No more cryptic upload-time errors.
+- **Better `publish` error reporting** — `themes publish` / `templates publish` now distinguish 200 / unchanged / 426 (upgrade required) / other errors with their own colored status lines, surfacing the server's message instead of a mute "failed".
+- **Symmetric `if: "feature-id"` on recipe steps** — opt-in features can now attach their own patches, deletes, and conditional creates universally (any step type), complementing the existing `unless:` gate. Templates can wire opt-in toggles without abusing `create-if`.
+- **Clearer `themes download` error** — when called without a slug, the message now points to `themes add <slug>` / `themes update` for project-driven downloads (those read from `pureadmin.json`).
 
-### v1.1.0
+## What's New in v1.1.0
 - **Asset manifest audit** — `themes pack` and `themes validate` now cross-check `assets/` folder, `theme.json` declarations, and CSS `url()` refs. Catches the case where a font is used in CSS but not listed in the manifest (would 404 after publish).
 - **`themes lint`** (new command) — quality/accessibility recommendations: WCAG contrast ratios for buttons and color slots, hardcoded border-radius detection. Advisory only; never exits non-zero.
 - **`themes validate` is now a hard correctness gate** — checks asset manifest, required `--pa-*` CSS variables, color slot definitions. Exits non-zero on errors so it works in CI. Soft checks (contrast, hardcoded values) moved to `themes lint`.
 - **Auto theme mode** — new apps default to `--default-mode auto`, which follows the OS `prefers-color-scheme` at runtime instead of being locked to dark. Wizard offers an "Auto — follow OS" option per theme.
 - **Provenance-annotated profiles** — `create` now tracks where every resolved input came from (CLI flag / preset / company / workspace / default). New `ORG_PROFILE` and `APP_PROFILE` README placeholders render the company profile and resolved app inputs as markdown bullet lists with muted `_(source)_` suffixes.
-
-### v1.0.1
-- **Config deep merge** — project-level `.pureadmin.json` with `targets` no longer nukes home-level apiKeys
-- **`--heroicons`** for Phoenix — Heroicons (built into Phoenix, no CDN needed) as alternative to Font Awesome
-- **`lib/create/icons.js`** — extracted icon maps (FA, Heroicons, Lucide) with `resolveIconAttr` and `resolveIconMarkup` for templates
-- **Makefile ecto-create** — gracefully skips when Ecto not installed (`--no-ecto` apps)
-- **Endpoint URL display** — Phoenix config patched to show `http://localhost:4000` instead of `http://localhost`
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)
