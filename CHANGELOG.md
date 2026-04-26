@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.2.1] - 2026-04-26 [PUBLISHED]
 
 ### Added
 - **`themes add --path <dir>`** — register a theme from a local directory instead of fetching from the API. Slug is read from `<dir>/theme.json`'s `id`; if a slug arg is also passed, it's validated against the manifest. The directory contents are snapshotted to `<projectRoot>/<themesDir>/<slug>/` (excluding `.git` / `node_modules`); the destination is wiped first so leftover files from a prior version don't linger. Persisted in `pureadmin.json` as `{ "path": "...", "version": "...", "offline": false }`.
