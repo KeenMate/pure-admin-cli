@@ -4,17 +4,13 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New in v1.2.2
+- **Wildcard segments in CLI ↔ server version negotiation** — `compareVersions` now treats explicit `x` or `*` segments as wildcards. The pureadmin.io server can advertise `max_compat: "1.2.x"` once and have any `1.2.*` CLI match — no more per-patch server-config bumps to admit each new CLI release.
+
 ## What's New in v1.2.1
 - **`themes add --path <dir>`** — register a theme from a local directory instead of fetching from the API. Slug is auto-derived from `theme.json`, contents are snapshotted into `static/themes/<slug>/`, and the entry persists with a `path` field in `pureadmin.json`. Lets devs iterate on a sibling theme repo (e.g. `../pure-admin-themes/audi`) without a publish round-trip.
 - **`themes update` honors local-path themes** — entries with a `path` re-snapshot from disk on every update (using `theme.json`'s version), so changes in the source repo land in the consuming app with one command. `themes list --local` labels them `local: <path>` so they're visually distinct from API-sourced themes.
 - **Fixed: `themes` commands now read `.pureadmin.json`** — `loadProjectConfig` previously only loaded `pureadmin.json`, so themes declared in the gitignored override file were silently ignored ("No themes configured" even when they were listed there). Now deep-merges both files, matching the global config layering.
-
-## What's New in v1.2.0
-- **CLI ↔ server version negotiation** — `pureadmin` and pureadmin.io now exchange version metadata on every API request. A one-line nudge prints (throttled once per 24h) when a newer CLI is on npm, and `themes publish` / `templates publish` fail with a clear `npm i -g @keenmate/pureadmin@latest` hint when the server requires a newer CLI than you have installed.
-- **Server-too-old detection** — when this CLI is newer than the server's max-compat range (e.g. local dev pureadmin.io vs. a current published CLI), the very first response triggers a hard fail with a `npm i -g @keenmate/pureadmin@<compat>` downgrade hint. No more cryptic upload-time errors.
-- **Better `publish` error reporting** — `themes publish` / `templates publish` now distinguish 200 / unchanged / 426 (upgrade required) / other errors with their own colored status lines, surfacing the server's message instead of a mute "failed".
-- **Symmetric `if: "feature-id"` on recipe steps** — opt-in features can now attach their own patches, deletes, and conditional creates universally (any step type), complementing the existing `unless:` gate. Templates can wire opt-in toggles without abusing `create-if`.
-- **Clearer `themes download` error** — when called without a slug, the message now points to `themes add <slug>` / `themes update` for project-driven downloads (those read from `pureadmin.json`).
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)
