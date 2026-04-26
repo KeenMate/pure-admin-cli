@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **Wildcard segments in the version comparator.** `compareVersions` (`lib/version-check.js`) now treats explicit `x` or `*` segments as wildcards rather than 0. Lets pure-admin-io advertise `max_compat: "1.2.x"` (or `latest: "1.2.x"`) once and have any `1.2.*` CLI match — no more per-patch server-config bumps. The previous coincidental `"1.2.0" === "1.2.x"` case is preserved (1.2.0 falls within the 1.2.* wildcard). Server-side `min_write` parsing is unchanged: Elixir's `Version.parse!` still rejects wildcards there, so wildcards are useful for the two CLI-checked fields (`max_compat`, `latest`) only.
+
 ## [1.2.1] - 2026-04-26 [PUBLISHED]
 
 ### Added

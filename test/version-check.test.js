@@ -12,9 +12,21 @@ describe('version-check._compareVersions', () => {
     assert.strictEqual(_compareVersions('1.2.0', '1.10.0'), -1);
   });
 
-  it('treats x as 0 for compat ranges', () => {
+  it('treats x/* as wildcard segments', () => {
+    // Within 1.2.* range — any patch matches the bound
     assert.strictEqual(_compareVersions('1.2.0', '1.2.x'), 0);
+    assert.strictEqual(_compareVersions('1.2.5', '1.2.x'), 0);
+    assert.strictEqual(_compareVersions('1.2.99', '1.2.x'), 0);
+    // Outside 1.2.* — major/minor still compare strictly
     assert.strictEqual(_compareVersions('1.3.0', '1.2.x'), 1);
+    assert.strictEqual(_compareVersions('1.1.0', '1.2.x'), -1);
+    // Wider wildcard — any 1.* version
+    assert.strictEqual(_compareVersions('1.5.7', '1.x.x'), 0);
+    assert.strictEqual(_compareVersions('2.0.0', '1.x.x'), 1);
+    // Asterisk syntax is also recognized
+    assert.strictEqual(_compareVersions('1.2.5', '1.2.*'), 0);
+    // Symmetric — wildcard on the left side works the same
+    assert.strictEqual(_compareVersions('1.2.x', '1.2.5'), 0);
   });
 
   it('strips prerelease for comparison', () => {
