@@ -216,6 +216,23 @@ Base defaults for all projects. On Windows: `C:\Users\<username>\.pureadmin.json
 
 **Workspace detection:** When you run `pureadmin create` from a directory matching a workspace path (e.g. `C:\Git\KM\my-project`), the matching company profile is auto-selected. The wizard filters to workspace companies and preselects `defaultCompany`.
 
+### API key resolution
+
+Used by `themes publish` and `templates publish`. Resolved in this order; first match wins:
+
+1. **`--api-key <key>`** flag on the command line.
+2. **The resolved target's `apiKey`** — comes from a `targets.<name>.apiKey` block in any of the three JSON files (most-local file wins on conflict). The target name is set by `--server <name>` or `defaultTarget` in your config.
+3. **Top-level `apiKey`** — same three JSON files, deepest one wins. So you can put an `apiKey` at the root of `~/.pureadmin.json` for a global default, or in `./.pureadmin.json` for a project-specific override.
+4. **`PUREADMIN_API_KEY` env var** — fallback for CI environments that don't want to commit a config file.
+
+**Where to put your apiKey in practice:**
+
+- **For everyday personal use across all projects** → `~/.pureadmin.json` top-level `apiKey`.
+- **For a project-specific key (e.g. a different test/staging key)** → `./.pureadmin.json` (gitignored).
+- **For CI** → `PUREADMIN_API_KEY` env var via your CI platform's secret store.
+
+**Don't put apiKeys in `./pureadmin.json`** — that file is checked in.
+
 ## License
 
 MIT

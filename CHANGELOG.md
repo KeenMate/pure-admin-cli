@@ -122,6 +122,26 @@ The `.pureadmin.json` file (per-developer overrides) is unchanged.
   (asserting that local overrides do NOT leak into the base file on
   `saveBaseConfig`, and that the lockfile is sorted for stable diffs).
 
+### Documentation
+
+- README — config section rewritten to describe the four-file model with a
+  comparison table, full schema examples for each file, and a new
+  "API key resolution" subsection that walks through the resolution chain
+  and recommends where to put apiKeys (home for global default,
+  `./.pureadmin.json` for project-specific, `PUREADMIN_API_KEY` env var for
+  CI). Plus an "update vs install" comparison table.
+- `--llm` reference output (`pureadmin --llm`) — config-files priority list
+  expanded to include `pureadmin.lock.json` and the API-key resolution chain.
+  Themes section now describes the lockfile model and the update/install
+  split.
+- New `docs/config-architecture.md` — long-form technical reference for
+  future maintainers covering: the four files and their roles, the two load
+  functions (`loadConfig` vs `loadProjectConfig`), the three save functions,
+  save routing per command, auto-migration of legacy schemas, the
+  immutable-deepMerge gotcha (and the regression test that catches it),
+  guidance on adding new top-level / per-theme fields, and the API key
+  resolution chain.
+
 ## [1.2.2] - 2026-04-26 [PUBLISHED]
 
 ### Changed
