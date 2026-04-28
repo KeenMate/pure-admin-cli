@@ -52,7 +52,7 @@ Contains:
 
 ### `./pureadmin.lock.json` — project resolutions
 
-Lives at the project root. **Tool-managed, checked in.** Modeled on `package-lock.json`. Read by `themes install`; written by `themes update` and `themes add`. Humans don't edit this directly.
+Lives at the project root. **Tool-managed, checked in.** Modeled on `package-lock.json`. Read by `themes install` and `themes ci`; written by `themes install`, `themes update`, and `themes add`. Humans don't edit this directly.
 
 Shape:
 ```json
@@ -157,7 +157,7 @@ For each slug that appears in any of the three layers, `themes[slug]` contains:
 `_layers` lets command code make decisions like:
 - "Save this theme back to whichever layer originally declared it" (so a base-only theme stays in base, a local-only theme stays in local, a both-layers theme has its declarations split).
 - "Display this theme as a personal override" if `_layers.local` is true.
-- "Refuse to install this theme if `_layers.lock` is false" — that's `themes install`'s consistency check.
+- "Refuse to install this theme if `_layers.lock` is false" — that's `themes ci`'s consistency check.
 
 #### Critical detail: immutable merge for the top-level `data` view
 
@@ -189,14 +189,15 @@ This is the entire point of the lockfile split:
 
 | Command | Writes |
 |---|---|
+| `themes install` | `pureadmin.lock.json` (only when something resolved fresh or a stale entry was pruned) |
 | `themes update` | `pureadmin.lock.json` only |
-| `themes install` | nothing |
+| `themes ci` | nothing |
 | `themes add <id>` | `pureadmin.json` (declarations) + `pureadmin.lock.json` (resolutions) |
 | `themes add <id> --path <dir>` | `.pureadmin.json` (default) OR `pureadmin.json` (`--shared`) + `pureadmin.lock.json` |
 | `themes list --local` | nothing |
 | `themes show / search / versions / compatible / download` | nothing (browse-only API calls) |
 
-`pureadmin.json` is touched only when a human explicitly adds or removes a theme. So `git status` after `themes update` shows only `pureadmin.lock.json`.
+`pureadmin.json` is touched only when a human explicitly adds or removes a theme. So `git status` after `themes install` or `themes update` shows only `pureadmin.lock.json`.
 
 ## Auto-migration: legacy schema → new schema
 
@@ -207,7 +208,7 @@ For backward compatibility with projects that have the old shape (resolved field
 3. Creates a corresponding lockfile entry from the hoisted fields, **only if no lockfile entry already exists** for that slug (the lockfile is more authoritative than a stale inline version field).
 4. The `source` field on the new lock entry is set to the entry's `path` if any, else `"remote"`.
 
-**The base file isn't physically rewritten until something else triggers a save** (e.g. `themes add` or `themes remove`). At that point `saveBaseConfig` writes the cleaned-up declarations-only shape. So the migration is *opportunistic*, not forced. A project that only ever runs `themes update` and `themes install` will keep its legacy shape forever and that's fine — the in-memory hoist makes everything Just Work.
+**The base file isn't physically rewritten until something else triggers a save** (e.g. `themes add` or `themes remove`). At that point `saveBaseConfig` writes the cleaned-up declarations-only shape. So the migration is *opportunistic*, not forced. A project that only ever runs `themes install`, `themes update`, or `themes ci` will keep its legacy shape forever and that's fine — the in-memory hoist makes everything Just Work.
 
 The bare-string promotion (`{ "audi": "../path" }` → `{ "audi": { "path": "../path" } }`) works the same way: applied in memory by `promoteBareStringThemes`, persisted to disk only on a subsequent save.
 

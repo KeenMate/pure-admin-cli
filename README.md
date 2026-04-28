@@ -78,8 +78,9 @@ pureadmin themes download audi          # Download theme ZIP
 pureadmin themes add express dark       # Add themes to project
 pureadmin themes add express --offline  # Add and commit to repo
 pureadmin themes add audi --path ../pure-admin-themes/audi  # Local-dev override (writes to .pureadmin.json by default)
-pureadmin themes update                 # Refresh: resolve latest, write the lockfile (DEV use)
-pureadmin themes install                # Install exactly what the lockfile records (CI use; like npm ci)
+pureadmin themes install                # Install themes from declarations + lock; resolves any not yet locked (default dev/setup verb; like npm install)
+pureadmin themes update                 # Bump declared themes to latest compatible with pure-admin-core (like npm update)
+pureadmin themes ci                     # Strict reproduce — fail if declarations/lock out of sync (CI use; like npm ci)
 pureadmin themes init my-theme          # Scaffold a new theme project
 pureadmin themes build                  # Compile SCSS to CSS
 pureadmin themes pack                   # Package into ZIP
@@ -158,7 +159,7 @@ Checked into the repo. Tool-managed. Records exact resolved state per theme so i
 }
 ```
 
-Updated by `themes update` (and `themes add`). Read by `themes install`. Sorted alphabetically by slug for stable diffs.
+Updated by `themes install`, `themes update`, and `themes add`. Read by `themes ci`. Sorted alphabetically by slug for stable diffs.
 
 ### .pureadmin.json (per-developer overrides)
 
@@ -175,19 +176,23 @@ Gitignored. Merges on top of `pureadmin.json` — use for personal local-path ov
 }
 ```
 
-Your personal `path` overrides the team's `pureadmin.json` declaration for `audi`. **Crucially, `themes update` will not write your override into `pureadmin.json`** — that file stays pristine. Only your own `pureadmin.lock.json` will record the resolved version under your local source path.
+Your personal `path` overrides the team's `pureadmin.json` declaration for `audi`. **Crucially, no automated command (`install`, `update`, `ci`) writes your override into `pureadmin.json`** — that file stays pristine. Only your own `pureadmin.lock.json` records the resolved version under your local source path.
 
-### `themes update` vs `themes install`
+### Three install verbs (mirror npm)
 
-| | `themes update` | `themes install` |
-|---|---|---|
-| **Purpose** | "I want fresh versions" | "Reproduce what the lockfile records" |
-| **Use case** | Developer iterating | CI pipeline / fresh clone |
-| **Reads from** | API (or local `path`) | Lockfile (then API at the recorded version) |
-| **Writes to** | `pureadmin.lock.json` | nothing |
-| **Fails if lockfile out of sync** | No (it updates the lockfile) | Yes (with hint to run `update`) |
+| | `themes install` | `themes update` | `themes ci` |
+|---|---|---|---|
+| **npm equivalent** | `npm install` | `npm update` | `npm ci` |
+| **Purpose** | "Get this project running" | "Bump versions" | "Reproduce exactly" |
+| **Use case** | Default dev/setup verb; fresh clone | Developer wants newer versions | CI pipeline |
+| **Source of truth** | Declarations + lock | Declarations | Lock |
+| **Resolves fresh from API?** | Only for declared themes not in lock | Always (every declared theme) | Never |
+| **Writes lockfile?** | Yes, when something resolved fresh | Yes, every run | Never |
+| **Fails if lock out of sync?** | No (resolves missing entries) | No (rewrites lock) | Yes (with hint to run `install`) |
 
-Use `themes update` locally when you want to bump theme versions, then commit the resulting lockfile diff. Your CI pipeline should call `themes install` so it always installs exactly what was reviewed and merged.
+All three pass the project's `@keenmate/pure-admin-core` version (auto-detected from `package.json` or `assets/package.json` for Phoenix) to the API as `?core_version=X` so themes resolve to compatible versions.
+
+Use `themes install` for normal setup. Use `themes update` deliberately when you want to bump versions, then commit the lockfile diff. Use `themes ci` in CI pipelines so they always install exactly what was reviewed and merged.
 
 ### ~/.pureadmin.json (user defaults)
 
