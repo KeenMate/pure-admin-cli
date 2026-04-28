@@ -1,5 +1,127 @@
 # Changelog
 
+## [1.3.0] - 2026-04-28
+
+### Added — three-file project config (lockfile split)
+
+The project config is now split across three files, modeled on the
+`package.json` / `package-lock.json` convention:
+
+- **`pureadmin.json`** — declarations only: which themes the project uses, and
+  for each theme whether it's sourced from the API or from a path. Hand-edited
+  by humans, checked in, and now **never modified by `themes update` or any
+  other automated command**.
+- **`pureadmin.lock.json`** *(new, checked in)* — the resolved state: the
+  exact `version`, `content_sha`, `fetched_at`, and `source` per theme. Same
+  shape and purpose as `package-lock.json`. Tool-managed; humans don't edit it
+  directly.
+- **`.pureadmin.json`** *(unchanged, gitignored)* — per-developer overrides:
+  a personal local `path` for a theme they're reworking, dev API keys, etc.
+
+The previous footgun was that `themes update` (and `themes add`, etc.)
+mutated and re-saved the entire merged blob into `pureadmin.json`. So if a
+developer added a personal `--path` override in `.pureadmin.json`, the next
+`themes update` would silently bake that personal path into the team-shared
+`pureadmin.json` — a guaranteed conflict on the next `git pull`. The
+lockfile split eliminates this entirely: each command writes only the
+file(s) appropriate for the change it's making.
+
+### Added — `themes install` command
+
+```bash
+pureadmin themes install
+```
+
+The CI-equivalent of `npm ci`. Reads `pureadmin.lock.json` and fetches each
+theme at its locked version (verifying `content_sha` against what was
+recorded). **Writes nothing.** Fails fast if any theme declared in
+`pureadmin.json` is missing from the lockfile (forces a human to run
+`themes update` first), same shape as `npm ci` failing on a stale lockfile.
+
+CI pipelines and fresh-clone setups should call `themes install`. Calling
+`themes update` from CI would silently advance versions mid-pipeline (no
+review, no PR diff) and write back to the lockfile.
+
+### Added — `themes add --path <dir> [--shared]`
+
+`themes add --path <dir>` now writes to `.pureadmin.json` (per-developer
+override) by default, since the typical scenario is one developer reworking
+a theme that the rest of the team consumes from the API. Pass `--shared` to
+write to `pureadmin.json` instead — for the rare case where the team
+genuinely co-locates theme source alongside the project.
+
+### Changed — save routing per command
+
+| Command | Writes |
+|---|---|
+| `themes update` | `pureadmin.lock.json` only |
+| `themes install` | nothing |
+| `themes add <id>` | `pureadmin.json` (declarations) + `pureadmin.lock.json` (resolutions) |
+| `themes add <id> --path <dir>` | `.pureadmin.json` (default) or `pureadmin.json` (`--shared`) + `pureadmin.lock.json` |
+
+`pureadmin.json` is touched only when a human explicitly adds or removes a
+team-shared theme. `git diff pureadmin.json` now shows intent changes only;
+version movements show up in `git diff pureadmin.lock.json` for review.
+
+### Changed — `pureadmin.json` schema for new projects
+
+The `themes` block in `pureadmin.json` now contains declarations only:
+
+```json
+{
+  "themes": {
+    "audi": {},
+    "ayu": { "offline": true }
+  }
+}
+```
+
+`version`, `content_sha`, and `fetched_at` are no longer written here —
+they live in `pureadmin.lock.json`. `pureadmin create` now writes both
+files. **Existing projects with the old shape continue to work**:
+`loadProjectConfig` auto-migrates any `version` / `content_sha` /
+`fetched_at` fields it finds in `pureadmin.json` into the lockfile in
+memory. The base file isn't physically rewritten until a `themes add` /
+`themes remove` triggers a base save, at which point the inline resolved
+fields are stripped.
+
+### Migration
+
+For existing projects:
+
+1. Run `pureadmin themes update` once. This generates `pureadmin.lock.json`
+   from your current resolved versions and leaves `pureadmin.json` untouched.
+2. Commit `pureadmin.lock.json` alongside `pureadmin.json`.
+3. (Optional) Hand-edit `pureadmin.json` to remove the now-redundant `version`
+   / `content_sha` fields. Or wait for the next `themes add` / `themes remove`
+   to do it for you.
+4. Update CI to call `pureadmin themes install` instead of `pureadmin themes
+   update`.
+
+The `.pureadmin.json` file (per-developer overrides) is unchanged.
+
+### Internal
+
+- `lib/config.js` — `loadProjectConfig()` now returns `{ baseFile, baseData,
+  localFile, localData, lockFile, lockData, data, themes, projectRoot }`.
+  `data` is the merged top-level view (for `themesDir`, `targets`, etc.);
+  `themes` is the per-theme merged view with provenance (`_layers: { base,
+  local, lock }`). Replaces the old `{ path, data }` return.
+- `saveProjectConfig` is replaced by three separate `saveBaseConfig` /
+  `saveLocalConfig` / `saveLockData`. The merged blob is never round-tripped
+  through a single save — each layer is written explicitly.
+- The merged `data` view is computed via the immutable `deepMerge` helper
+  (not `deepMergeInto`). Prevents `data.themes[slug]` mutations from
+  silently mutating `baseData.themes[slug]` through shared references — a
+  subtle bug that would have re-introduced the leak the refactor was meant
+  to fix.
+- `loadProjectConfig` walks up from cwd looking for any of the three files
+  (previously only base + local). Project root is wherever the first match
+  is found.
+- New tests in `test/config.test.js` exercise the layered save routing
+  (asserting that local overrides do NOT leak into the base file on
+  `saveBaseConfig`, and that the lockfile is sorted for stable diffs).
+
 ## [1.2.2] - 2026-04-26 [PUBLISHED]
 
 ### Changed

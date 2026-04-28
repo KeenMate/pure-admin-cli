@@ -77,7 +77,9 @@ pureadmin themes compatible 2.0.0       # Themes for a core version
 pureadmin themes download audi          # Download theme ZIP
 pureadmin themes add express dark       # Add themes to project
 pureadmin themes add express --offline  # Add and commit to repo
-pureadmin themes update                 # Re-download changed themes
+pureadmin themes add audi --path ../pure-admin-themes/audi  # Local-dev override (writes to .pureadmin.json by default)
+pureadmin themes update                 # Refresh: resolve latest, write the lockfile (DEV use)
+pureadmin themes install                # Install exactly what the lockfile records (CI use; like npm ci)
 pureadmin themes init my-theme          # Scaffold a new theme project
 pureadmin themes build                  # Compile SCSS to CSS
 pureadmin themes pack                   # Package into ZIP
@@ -111,39 +113,81 @@ pureadmin presets delete my-setup       # Remove a preset
 
 ## Configuration
 
-All configuration is JSON. Three levels, merged in order (later overrides earlier):
+JSON files at three levels for global config, plus a project-local lockfile. Modeled on npm's `package.json` / `package-lock.json` split.
 
 | File | Purpose | Check in? |
 |------|---------|-----------|
-| `~/.pureadmin.json` | User defaults (API URL, key) | N/A |
-| `pureadmin.json` | Project config (themes, URL) | Yes |
-| `.pureadmin.json` | Local overrides (API key) | No (gitignore) |
+| `~/.pureadmin.json` | User defaults (API URL, default target, API keys) | N/A |
+| `pureadmin.json` | **Declarations**: which themes the project uses, themesDir, etc. Hand-edited by humans. | Yes |
+| `pureadmin.lock.json` | **Resolutions**: resolved version + content_sha + fetched_at per theme. Tool-managed. | Yes |
+| `.pureadmin.json` | **Per-developer overrides**: personal local `path`, dev API keys, etc. | No (gitignore) |
 
 CLI flags (`--server`, `--api-key`) and env vars (`PUREADMIN_URL`, `PUREADMIN_API_KEY`) override all config files.
 
-### pureadmin.json (project config)
+### pureadmin.json (declarations)
 
-Checked into the repo. Tracks themes and project settings:
+Checked into the repo. **Never modified by `themes update`** — only by explicit `themes add` / `themes remove`. So `git diff pureadmin.json` always shows intent changes only:
 
 ```json
 {
-  "url": "https://pureadmin.io",
   "themesDir": "static/themes",
   "themes": {
-    "audi": { "version": "2.3.2", "content_sha": "sha256:...", "offline": false }
+    "audi": {},
+    "ayu": { "offline": true }
   }
 }
 ```
 
-### .pureadmin.json (local overrides)
+A theme entry can be `{}` (remote, default), `{ "offline": true }` (commit theme files to repo for airgapped builds), or `{ "path": "../shared-themes/audi" }` (rare: team co-locates the source).
 
-Gitignored. Merges on top of `pureadmin.json` — use for secrets:
+### pureadmin.lock.json (resolutions)
+
+Checked into the repo. Tool-managed. Records exact resolved state per theme so installs are reproducible. Same purpose as `package-lock.json`:
 
 ```json
 {
-  "apiKey": "your-api-key-here"
+  "_format": 1,
+  "themes": {
+    "audi": {
+      "version": "2.3.4",
+      "content_sha": "sha256:abc...",
+      "fetched_at": "2026-04-28T09:38:05.110Z",
+      "source": "remote"
+    }
+  }
 }
 ```
+
+Updated by `themes update` (and `themes add`). Read by `themes install`. Sorted alphabetically by slug for stable diffs.
+
+### .pureadmin.json (per-developer overrides)
+
+Gitignored. Merges on top of `pureadmin.json` — use for personal local-path overrides and secrets:
+
+```json
+{
+  "themes": {
+    "audi": { "path": "../pure-admin-themes/audi" }
+  },
+  "targets": {
+    "local": { "url": "http://localhost:8888", "apiKey": "dev-key" }
+  }
+}
+```
+
+Your personal `path` overrides the team's `pureadmin.json` declaration for `audi`. **Crucially, `themes update` will not write your override into `pureadmin.json`** — that file stays pristine. Only your own `pureadmin.lock.json` will record the resolved version under your local source path.
+
+### `themes update` vs `themes install`
+
+| | `themes update` | `themes install` |
+|---|---|---|
+| **Purpose** | "I want fresh versions" | "Reproduce what the lockfile records" |
+| **Use case** | Developer iterating | CI pipeline / fresh clone |
+| **Reads from** | API (or local `path`) | Lockfile (then API at the recorded version) |
+| **Writes to** | `pureadmin.lock.json` | nothing |
+| **Fails if lockfile out of sync** | No (it updates the lockfile) | Yes (with hint to run `update`) |
+
+Use `themes update` locally when you want to bump theme versions, then commit the resulting lockfile diff. Your CI pipeline should call `themes install` so it always installs exactly what was reviewed and merged.
 
 ### ~/.pureadmin.json (user defaults)
 
