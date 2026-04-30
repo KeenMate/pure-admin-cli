@@ -4,6 +4,12 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New in v1.3.0
+- **Three-file project config (lockfile split)** — `pureadmin.json` is now declarations only (which themes the project uses, plus `themesDir`), and a new tool-managed `pureadmin.lock.json` records the resolved `version` / `content_sha` / `fetched_at` per theme. Same shape as `package.json` / `package-lock.json`. Both are checked in; `git diff pureadmin.json` now shows intent changes only. `.pureadmin.json` (gitignored) still layers per-developer overrides on top.
+- **Three install verbs that mirror npm** — `themes install` (default permissive: install from lock, resolve any declared theme not yet locked), `themes update` (bump every declared theme to latest compatible version), `themes ci` (strict reproduce, fails if declarations and lock are out of sync). The previous strict `themes install` is now `themes ci` — CI pipelines should switch.
+- **Theme resolution filtered by `@keenmate/pure-admin-core` version** — `install`, `update`, and `add` auto-detect the project's pure-admin-core version (from `package.json` or `assets/package.json` for Phoenix; resolved version in `node_modules` wins over the declared range) and pass it to the API so themes resolve to compatible versions. No more accidentally pulling a newer theme that drifted past your CSS framework.
+- **`pureadmin create` no longer ships `pureadmin.json`** — it generates declarations from `--themes` and `recipe.themeSetup.themesDir`, then runs `themes install` to produce the lockfile. Same flow a fresh-cloned project would use. Phoenix LiveView projects now get a `pureadmin.json` for free (the v1.2.x gap is closed).
+
 ## What's New in v1.2.2
 - **Wildcard segments in CLI ↔ server version negotiation** — `compareVersions` now treats explicit `x` or `*` segments as wildcards. The pureadmin.io server can advertise `max_compat: "1.2.x"` once and have any `1.2.*` CLI match — no more per-patch server-config bumps to admit each new CLI release.
 

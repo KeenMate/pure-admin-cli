@@ -49,7 +49,6 @@
     { "action": "create", "path": "src/app.html", "template": "app.html" },
     { "action": "create", "path": "src/app.css", "template": "app.css" },
     { "action": "create", "path": "src/routes/+layout.svelte", "template": "layout.svelte" },
-    { "action": "create", "path": "pureadmin.json", "template": "pureadmin.json" },
     { "action": "create", "path": "Makefile", "template": "Makefile" },
     { "action": "create", "path": "README.md", "template": "README.md" },
     { "action": "create", "path": "CHANGELOG.md", "template": "CHANGELOG.md" },

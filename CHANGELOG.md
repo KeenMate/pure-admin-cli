@@ -1,67 +1,6 @@
 # Changelog
 
-## [Unreleased]
-
-### Changed — `themes install` / `update` / `ci` re-aligned with npm verbs
-
-The 1.3.0 split correctly identified declarations vs resolutions but still
-left `themes update` doing double duty (resolve-and-lock-from-fresh AND
-bump-versions). 1.3.0 also made `themes install` strict-only (CI use), so a
-fresh clone could not just run `install` — it had to run `update` first,
-which is the wrong direction for a default verb. The verbs now mirror npm:
-
-| pureadmin verb | npm equivalent | Behavior |
-|---|---|---|
-| `themes install` | `npm install` | Default dev/setup verb. Lock present → install from lock. Lock missing or some declared theme not yet locked → resolve fresh from API (filtered by core version), download, write lockfile. |
-| `themes update` | `npm update` | Bump every declared theme to the latest version compatible with the project's pure-admin-core. Re-download changed ones. Rewrite lockfile. |
-| `themes ci` *(new)* | `npm ci` | Strict reproduce. Fail if declarations and lock are out of sync, never write. CI use. |
-
-The previous strict `themes install` is now `themes ci`. CI pipelines that
-called `pureadmin themes install` should switch to `pureadmin themes ci`.
-
-### Changed — themes resolve filtered by `@keenmate/pure-admin-core` version
-
-`themes install`, `themes update`, and `themes add` now auto-detect the
-project's `@keenmate/pure-admin-core` version and pass it to the API as
-`?core_version=X` so themes resolve to versions compatible with the
-project's CSS framework. Detection probes:
-
-1. `<projectRoot>/package.json` (Svelte / generic npm projects)
-2. `<projectRoot>/assets/package.json` (Phoenix LiveView projects)
-
-The resolved version in `node_modules/@keenmate/pure-admin-core/package.json`
-wins over the declared range; declared ranges are stripped to their concrete
-lower bound (e.g. `^2.5.0` → `2.5.0`). Non-version specifiers (`latest`,
-`file:...`, `github:...`) skip the filter and warn — themes resolve to
-absolute latest in that case.
-
-### Changed — `pureadmin create` no longer ships `pureadmin.json`
-
-`pureadmin create` now generates `pureadmin.json` from `--themes` and
-`recipe.themeSetup.themesDir`, then runs `themes install` to download themes
-and write `pureadmin.lock.json`. Same flow a fresh-cloned project would use.
-Templates no longer ship `template/pureadmin.json`:
-
-- **svelte-sveltekit** — removed (was carrying legacy inline `version` /
-  `content_sha` for one hardcoded theme; would conflict with whichever
-  themes the user actually requested)
-- **svelte-spa** — removed (was an empty stub)
-- **elixir-phoenix-liveview** — never shipped one; now gets one for free
-
-`themeSetup.themesDir` in each `template.json` is the single source of
-truth for where themes are extracted (`static/themes` for sveltekit,
-`public/themes` for spa, `priv/static/themes` for phoenix).
-
-### Internal
-
-- New `lib/helpers/core-version.js` with `detectCoreVersion(projectRoot)`
-  and `stripRangePrefix(range)`. Pure functions, 25 tests.
-- `cmdInstall` / `cmdUpdate` / `cmdCi` no longer call `process.exit` — they
-  return `{ installed, failed, ... }`. The router converts non-zero failure
-  counts into exit codes; internal callers (like `pureadmin create`) inspect
-  the result and decide whether to continue.
-
-## [1.3.0] - 2026-04-28
+## [1.3.0] - 2026-04-30
 
 ### Added — three-file project config (lockfile split)
 
@@ -87,21 +26,34 @@ developer added a personal `--path` override in `.pureadmin.json`, the next
 lockfile split eliminates this entirely: each command writes only the
 file(s) appropriate for the change it's making.
 
-### Added — `themes install` command
+### Added — three install verbs that mirror npm
 
-```bash
-pureadmin themes install
-```
+| pureadmin verb | npm equivalent | Behavior |
+|---|---|---|
+| `themes install` | `npm install` | Default dev/setup verb. Lock present → install from lock. Lock missing or some declared theme not yet locked → resolve fresh from API (filtered by core version), download, write lockfile. |
+| `themes update` | `npm update` | Bump every declared theme to the latest version compatible with the project's pure-admin-core. Re-download changed ones. Rewrite lockfile. |
+| `themes ci` | `npm ci` | Strict reproduce. Fail if declarations and lock are out of sync, never write. CI use. |
 
-The CI-equivalent of `npm ci`. Reads `pureadmin.lock.json` and fetches each
-theme at its locked version (verifying `content_sha` against what was
-recorded). **Writes nothing.** Fails fast if any theme declared in
-`pureadmin.json` is missing from the lockfile (forces a human to run
-`themes update` first), same shape as `npm ci` failing on a stale lockfile.
+`themes install` is the default — fresh clones, "get this project running"
+flows. `themes update` is the deliberate "bump versions" verb. `themes ci`
+is the strict CI verb that fails fast on lockfile drift instead of
+silently advancing versions mid-pipeline.
 
-CI pipelines and fresh-clone setups should call `themes install`. Calling
-`themes update` from CI would silently advance versions mid-pipeline (no
-review, no PR diff) and write back to the lockfile.
+### Added — theme resolution filtered by `@keenmate/pure-admin-core` version
+
+`themes install`, `themes update`, and `themes add` auto-detect the
+project's `@keenmate/pure-admin-core` version and pass it to the API as
+`?core_version=X` so themes resolve to versions compatible with the
+project's CSS framework. Detection probes:
+
+1. `<projectRoot>/package.json` (Svelte / generic npm projects)
+2. `<projectRoot>/assets/package.json` (Phoenix LiveView projects)
+
+The resolved version in `node_modules/@keenmate/pure-admin-core/package.json`
+wins over the declared range; declared ranges are stripped to their concrete
+lower bound (e.g. `^2.5.0` → `2.5.0`). Non-version specifiers (`latest`,
+`file:...`, `github:...`) skip the filter and warn — themes resolve to
+absolute latest in that case.
 
 ### Added — `themes add --path <dir> [--shared]`
 
@@ -115,8 +67,9 @@ genuinely co-locates theme source alongside the project.
 
 | Command | Writes |
 |---|---|
-| `themes update` | `pureadmin.lock.json` only |
-| `themes install` | nothing |
+| `themes install` | `pureadmin.lock.json` (only when something resolved fresh) |
+| `themes update` | `pureadmin.lock.json` (always) |
+| `themes ci` | nothing |
 | `themes add <id>` | `pureadmin.json` (declarations) + `pureadmin.lock.json` (resolutions) |
 | `themes add <id> --path <dir>` | `.pureadmin.json` (default) or `pureadmin.json` (`--shared`) + `pureadmin.lock.json` |
 
@@ -146,18 +99,31 @@ memory. The base file isn't physically rewritten until a `themes add` /
 `themes remove` triggers a base save, at which point the inline resolved
 fields are stripped.
 
+### Changed — `pureadmin create` no longer ships `pureadmin.json`
+
+`pureadmin create` now generates `pureadmin.json` from `--themes` and
+`recipe.themeSetup.themesDir`, then runs `themes install` to download themes
+and write `pureadmin.lock.json`. Same flow a fresh-cloned project would use.
+Templates no longer ship `template/pureadmin.json` — `themeSetup.themesDir`
+in each `template.json` is the single source of truth for where themes are
+extracted (`static/themes` for sveltekit, `public/themes` for spa,
+`priv/static/themes` for phoenix). Phoenix LiveView projects now get a
+`pureadmin.json` for free (was previously missing).
+
 ### Migration
 
 For existing projects:
 
-1. Run `pureadmin themes update` once. This generates `pureadmin.lock.json`
-   from your current resolved versions and leaves `pureadmin.json` untouched.
+1. Run `pureadmin themes install` once. The auto-migration in
+   `loadProjectConfig` hoists any inline `version` / `content_sha` /
+   `fetched_at` fields from `pureadmin.json` into the lockfile in memory,
+   and `themes install` then writes `pureadmin.lock.json` to disk.
 2. Commit `pureadmin.lock.json` alongside `pureadmin.json`.
 3. (Optional) Hand-edit `pureadmin.json` to remove the now-redundant `version`
    / `content_sha` fields. Or wait for the next `themes add` / `themes remove`
    to do it for you.
-4. Update CI to call `pureadmin themes install` instead of `pureadmin themes
-   update`.
+4. Update CI to call `pureadmin themes ci` instead of any prior verb — it's
+   the strict-reproduce verb (fails fast on lockfile drift, writes nothing).
 
 The `.pureadmin.json` file (per-developer overrides) is unchanged.
 
@@ -182,6 +148,12 @@ The `.pureadmin.json` file (per-developer overrides) is unchanged.
 - New tests in `test/config.test.js` exercise the layered save routing
   (asserting that local overrides do NOT leak into the base file on
   `saveBaseConfig`, and that the lockfile is sorted for stable diffs).
+- New `lib/helpers/core-version.js` with `detectCoreVersion(projectRoot)`
+  and `stripRangePrefix(range)`. Pure functions, 25 tests.
+- `cmdInstall` / `cmdUpdate` / `cmdCi` no longer call `process.exit` — they
+  return `{ installed, failed, ... }`. The router converts non-zero failure
+  counts into exit codes; internal callers (like `pureadmin create`) inspect
+  the result and decide whether to continue.
 
 ### Documentation
 
@@ -190,7 +162,7 @@ The `.pureadmin.json` file (per-developer overrides) is unchanged.
   "API key resolution" subsection that walks through the resolution chain
   and recommends where to put apiKeys (home for global default,
   `./.pureadmin.json` for project-specific, `PUREADMIN_API_KEY` env var for
-  CI). Plus an "update vs install" comparison table.
+  CI). Plus an `install` / `update` / `ci` comparison table.
 - `--llm` reference output (`pureadmin --llm`) — config-files priority list
   expanded to include `pureadmin.lock.json` and the API-key resolution chain.
   Themes section now describes the lockfile model and the update/install
