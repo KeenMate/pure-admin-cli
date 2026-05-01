@@ -185,28 +185,32 @@ There is **no merged save**. The merged blob is never round-tripped through a si
 
 ## Save routing per command
 
-This is the entire point of the lockfile split:
+This is the entire point of the lockfile split. The 1.3.1 invariant
+**`pureadmin.lock.json` mirrors `pureadmin.json` exclusively** is what makes
+the columns below predictable — `.pureadmin.json` never causes a lock write,
+ever.
 
 | Command | Writes |
 |---|---|
-| `themes install` | `pureadmin.lock.json` (only when something resolved fresh or a stale entry was pruned) |
+| `themes install` | `pureadmin.lock.json` (only when a base-declared theme was resolved fresh, a leaked path-source lock entry was healed, or a stale entry was pruned) |
 | `themes update` | `pureadmin.lock.json` only |
 | `themes ci` | nothing |
 | `themes add <id>` | `pureadmin.json` (declarations) + `pureadmin.lock.json` (resolutions) |
-| `themes add <id> --path <dir>` | `.pureadmin.json` (default) OR `pureadmin.json` (`--shared`) + `pureadmin.lock.json` |
+| `themes add <id> --path <dir>` (default) | `.pureadmin.json` only — **never the lock** |
+| `themes add <id> --path <dir> --shared` | `pureadmin.json` (declarations) + `pureadmin.lock.json` (resolutions) |
 | `themes list --local` | nothing |
 | `themes show / search / versions / compatible / download` | nothing (browse-only API calls) |
 
 `pureadmin.json` is touched only when a human explicitly adds or removes a theme. So `git status` after `themes install` or `themes update` shows only `pureadmin.lock.json`.
 
+`themes install` separates "what to put on disk" (uses the merged view, so a `.pureadmin.json` `path` override snapshots from the path) from "what to write to the lock" (uses `pureadmin.json` exclusively). When base declares registry but the lock entry has a path source — the leaked-from-1.3.0 case — the entry is treated as missing and re-resolved fresh from the registry. So an existing polluted lockfile self-heals on next install.
+
 ## Auto-migration: legacy schema → new schema
 
-For backward compatibility with projects that have the old shape (resolved fields like `version` / `content_sha` baked into `pureadmin.json`), `loadProjectConfig` calls `hoistResolvedFieldsToLock` on both `baseData` and `localData`. This:
+For backward compatibility with projects that have the old shape (resolved fields like `version` / `content_sha` baked into `pureadmin.json`), `loadProjectConfig` calls `hoistResolvedFieldsToLock` on `baseData` and `stripResolvedFields` on `localData`:
 
-1. Walks every theme entry in the layer.
-2. If the entry has any of `version`, `content_sha`, or `fetched_at`, removes those fields from the entry **in memory only**.
-3. Creates a corresponding lockfile entry from the hoisted fields, **only if no lockfile entry already exists** for that slug (the lockfile is more authoritative than a stale inline version field).
-4. The `source` field on the new lock entry is set to the entry's `path` if any, else `"remote"`.
+1. **`baseData`** — walks every theme entry. If the entry has any of `version` / `content_sha` / `fetched_at`, removes those fields from the entry **in memory only**. Creates a corresponding lockfile entry from the hoisted fields, **only if no lockfile entry already exists** for that slug (the lockfile is more authoritative than a stale inline version field). The `source` field on the new lock entry is set to the entry's `path` if any, else `"remote"`.
+2. **`localData`** — walks every theme entry and **strips** `version` / `content_sha` / `fetched_at` from the entry in memory. Does NOT hoist them anywhere. The lock mirrors `pureadmin.json` exclusively, and a personal override is a runtime overlay that never contributes a lock entry. Legacy projects where someone wrote a `version` into `.pureadmin.json` simply lose it on first read; `themes install` resolves the base declaration fresh from the registry next time.
 
 **The base file isn't physically rewritten until something else triggers a save** (e.g. `themes add` or `themes remove`). At that point `saveBaseConfig` writes the cleaned-up declarations-only shape. So the migration is *opportunistic*, not forced. A project that only ever runs `themes install`, `themes update`, or `themes ci` will keep its legacy shape forever and that's fine — the in-memory hoist makes everything Just Work.
 

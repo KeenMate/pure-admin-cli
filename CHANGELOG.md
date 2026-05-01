@@ -1,5 +1,72 @@
 # Changelog
 
+## [1.3.1] - 2026-05-01
+
+### Fixed — `.pureadmin.json` overrides no longer leak into `pureadmin.lock.json`
+
+The 1.3.0 lockfile-split correctly identified declarations vs resolutions but
+the install / update / add code paths consulted the merged view (base ⊕
+local) when computing what to write into the lock. So if a developer had a
+personal `.pureadmin.json` path override active and ran any theme verb, the
+resulting lock entry recorded the local filesystem path. Once committed, the
+leaked lock pointed at a path that existed only on that developer's machine —
+breaking CI, Docker builds, and other developers' clones until someone reset
+the lockfile by hand.
+
+The invariant the 1.3.1 fix enforces:
+
+> `pureadmin.lock.json` mirrors `pureadmin.json` exclusively. `.pureadmin.json`
+> is a runtime overlay only — it affects what files end up on disk, but it
+> never causes a lock write.
+
+Concrete behavior changes:
+
+- **`themes install`** — separates "what to put on disk" (uses merged view, so
+  a `.pureadmin.json` `path` override snapshots from the path) from "what to
+  write to the lock" (uses `pureadmin.json` exclusively). When a base
+  declaration is registry but the lock entry has a path source (= leaked from
+  a pre-1.3.1 install), the entry is treated as missing and re-resolved from
+  the registry — so existing polluted lockfiles self-heal on next install.
+- **`themes update`** — iterates `pureadmin.json` only. `.pureadmin.json`
+  overrides are ignored entirely for both lock writes and disk writes (when an
+  override is active, the on-disk override is left in place; the lock is
+  updated to reflect the registry resolution).
+- **`themes ci`** — operates on `pureadmin.json` + `pureadmin.lock.json`
+  exclusively. `.pureadmin.json` is ignored even when present locally — the
+  whole point of `ci` is strict reproduction of what's checked in.
+- **`themes add --path <dir>`** — default mode (`.pureadmin.json`) no longer
+  writes the lock. `--shared` mode (declaration goes into `pureadmin.json`)
+  retains the lock write.
+- **`loadProjectConfig`** — legacy inline `version` / `content_sha` /
+  `fetched_at` fields in `.pureadmin.json` are stripped in memory rather than
+  hoisted into the lock. Existing projects with this legacy shape simply lose
+  the inline metadata on first read; `themes install` resolves the base
+  declaration fresh from the registry next time.
+
+### Local-theme dev workflow (unchanged from intent, now actually correct)
+
+```bash
+pureadmin themes add audi --path ../pure-admin-themes/audi   # → .pureadmin.json
+# iterate on ../pure-admin-themes/audi
+pureadmin themes install                                      # re-snapshots from the path; lock untouched
+# when done:
+pureadmin themes publish                                      # push to registry
+pureadmin themes add audi                                     # → pureadmin.json + lock (registry)
+# remove the .pureadmin.json entry, or leave it (you keep using your local copy, CI uses registry)
+```
+
+Other developers and CI/Docker clone the repo, run `pureadmin themes install`
+or `pureadmin themes ci`, and reproduce the team's resolved versions exactly —
+without ever needing the contributor's sibling theme repo.
+
+### Tests
+
+- New `test/themes.test.js` covers the lock-mirrors-base invariant from three
+  angles: legacy `.pureadmin.json` inline fields are stripped (not hoisted),
+  `themes add --path` default mode leaves the lock byte-identical, and
+  `cmdInstall` with an override on top of a valid registry lock entry
+  installs from the path while leaving the lock untouched.
+
 ## [1.3.0] - 2026-04-30
 
 ### Added — three-file project config (lockfile split)

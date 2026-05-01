@@ -4,6 +4,9 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New in v1.3.1
+- **Fix: `.pureadmin.json` overrides no longer leak into `pureadmin.lock.json`** — in 1.3.0 the install / update / add code paths consulted the merged view (base ⊕ local) when computing what to write into the lock, so a developer's personal `--path` override would silently bake into the team-shared lockfile and break CI / Docker / other clones. The 1.3.1 fix enforces a hard invariant: `pureadmin.lock.json` mirrors `pureadmin.json` exclusively; `.pureadmin.json` is a runtime overlay only and never causes a lock write. `themes install` self-heals existing polluted lockfiles by re-resolving any path-sourced lock entry whose base declaration is registry. Local-theme dev workflow is unchanged: `themes add audi --path ../pure-admin-themes/audi` still snapshots files for your iteration; the lock just stays clean.
+
 ## What's New in v1.3.0
 - **Three-file project config (lockfile split)** — `pureadmin.json` is now declarations only (which themes the project uses, plus `themesDir`), and a new tool-managed `pureadmin.lock.json` records the resolved `version` / `content_sha` / `fetched_at` per theme. Same shape as `package.json` / `package-lock.json`. Both are checked in; `git diff pureadmin.json` now shows intent changes only. `.pureadmin.json` (gitignored) still layers per-developer overrides on top.
 - **Three install verbs that mirror npm** — `themes install` (default permissive: install from lock, resolve any declared theme not yet locked), `themes update` (bump every declared theme to latest compatible version), `themes ci` (strict reproduce, fails if declarations and lock are out of sync). The previous strict `themes install` is now `themes ci` — CI pipelines should switch.
