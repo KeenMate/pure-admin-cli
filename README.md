@@ -4,22 +4,11 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New in v1.3.2
+- **Fix: packed `theme.json` paths now match the published ZIP layout** — `themes pack` was already writing the CSS to `css/<id>.css` and SCSS to `scss/<id>.scss` inside the ZIP, but leaving the source-tree paths (`dist/<id>.css`, `src/scss/<id>.scss`) untouched in the embedded manifest. Consumers that trusted `colorVariants[].file` or `exports.css` got 404s. The enriched manifest now rewrites `colorVariants[*].file`, `exports.css`, and `exports.scss` to the published-ZIP paths so the manifest is self-consistent. Already-published ZIPs need a repack-and-republish to pick up the fix.
+
 ## What's New in v1.3.1
 - **Fix: `.pureadmin.json` overrides no longer leak into `pureadmin.lock.json`** — in 1.3.0 the install / update / add code paths consulted the merged view (base ⊕ local) when computing what to write into the lock, so a developer's personal `--path` override would silently bake into the team-shared lockfile and break CI / Docker / other clones. The 1.3.1 fix enforces a hard invariant: `pureadmin.lock.json` mirrors `pureadmin.json` exclusively; `.pureadmin.json` is a runtime overlay only and never causes a lock write. `themes install` self-heals existing polluted lockfiles by re-resolving any path-sourced lock entry whose base declaration is registry. Local-theme dev workflow is unchanged: `themes add audi --path ../pure-admin-themes/audi` still snapshots files for your iteration; the lock just stays clean.
-
-## What's New in v1.3.0
-- **Three-file project config (lockfile split)** — `pureadmin.json` is now declarations only (which themes the project uses, plus `themesDir`), and a new tool-managed `pureadmin.lock.json` records the resolved `version` / `content_sha` / `fetched_at` per theme. Same shape as `package.json` / `package-lock.json`. Both are checked in; `git diff pureadmin.json` now shows intent changes only. `.pureadmin.json` (gitignored) still layers per-developer overrides on top.
-- **Three install verbs that mirror npm** — `themes install` (default permissive: install from lock, resolve any declared theme not yet locked), `themes update` (bump every declared theme to latest compatible version), `themes ci` (strict reproduce, fails if declarations and lock are out of sync). The previous strict `themes install` is now `themes ci` — CI pipelines should switch.
-- **Theme resolution filtered by `@keenmate/pure-admin-core` version** — `install`, `update`, and `add` auto-detect the project's pure-admin-core version (from `package.json` or `assets/package.json` for Phoenix; resolved version in `node_modules` wins over the declared range) and pass it to the API so themes resolve to compatible versions. No more accidentally pulling a newer theme that drifted past your CSS framework.
-- **`pureadmin create` no longer ships `pureadmin.json`** — it generates declarations from `--themes` and `recipe.themeSetup.themesDir`, then runs `themes install` to produce the lockfile. Same flow a fresh-cloned project would use. Phoenix LiveView projects now get a `pureadmin.json` for free (the v1.2.x gap is closed).
-
-## What's New in v1.2.2
-- **Wildcard segments in CLI ↔ server version negotiation** — `compareVersions` now treats explicit `x` or `*` segments as wildcards. The pureadmin.io server can advertise `max_compat: "1.2.x"` once and have any `1.2.*` CLI match — no more per-patch server-config bumps to admit each new CLI release.
-
-## What's New in v1.2.1
-- **`themes add --path <dir>`** — register a theme from a local directory instead of fetching from the API. Slug is auto-derived from `theme.json`, contents are snapshotted into `static/themes/<slug>/`, and the entry persists with a `path` field in `pureadmin.json`. Lets devs iterate on a sibling theme repo (e.g. `../pure-admin-themes/audi`) without a publish round-trip.
-- **`themes update` honors local-path themes** — entries with a `path` re-snapshot from disk on every update (using `theme.json`'s version), so changes in the source repo land in the consuming app with one command. `themes list --local` labels them `local: <path>` so they're visually distinct from API-sourced themes.
-- **Fixed: `themes` commands now read `.pureadmin.json`** — `loadProjectConfig` previously only loaded `pureadmin.json`, so themes declared in the gitignored override file were silently ignored ("No themes configured" even when they were listed there). Now deep-merges both files, matching the global config layering.
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)

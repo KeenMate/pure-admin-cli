@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.2] - 2026-05-02 [PUBLISHED]
+
+### Fixed — packed `theme.json` paths now match the published ZIP layout
+
+`pureadmin themes pack` was rewriting the file *locations* on the way into the
+ZIP (`dist/<id>.css` → `css/<id>.css`, `src/scss/<id>.scss` → `scss/<id>.scss`)
+but leaving the source-tree paths in the embedded manifest untouched. The
+published `theme.json` therefore declared `colorVariants[].file: "dist/<id>.css"`
+and `exports.css: "./dist/<id>.css"` while the actual files lived at `css/<id>.css`,
+causing 404s for any consumer that trusted the manifest.
+
+The enriched manifest now normalizes:
+
+- `colorVariants[*].file` → `css/<id>.css`
+- `exports.css` → `css/<id>.css`
+- `exports.scss` → `scss/<id>.scss` (or removed if the theme has no SCSS)
+
+Already-published ZIPs need a repack-and-republish to pick up the corrected
+manifest; consumers can probe `css/<id>.css` first as a defensive fallback.
+
 ## [1.3.1] - 2026-05-01
 
 ### Fixed — `.pureadmin.json` overrides no longer leak into `pureadmin.lock.json`
