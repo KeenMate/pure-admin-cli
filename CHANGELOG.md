@@ -23,6 +23,23 @@ screen and exits:
 A CLI test (`test/cli.test.js`) asserts the no-execute behavior so the same
 regression can't reach destructive verbs again unnoticed.
 
+### Fixed — `help <subcommand>` now resolves across nested commands
+
+`pureadmin help publish` used to fail with `Unknown command: publish` because
+the `help` handler only looked up top-level commands. Subcommands like
+`publish`, `add`, `pack`, and `list` were therefore reachable only via the
+full nested form (`help themes publish`).
+
+The `help` handler now falls back to scanning every command's subcommands
+when the top-level lookup misses:
+
+- Unique match (e.g. `help add` → only `themes add`) → renders that
+  subcommand's help directly.
+- Multiple matches (e.g. `help publish` exists under `themes` and
+  `templates`) → reports the ambiguity and lists the disambiguated forms:
+  `pureadmin help themes publish`, `pureadmin help templates publish`.
+- No match → unchanged `Unknown command: <name>` error.
+
 ## [1.3.2] - 2026-05-02 [PUBLISHED]
 
 ### Fixed — packed `theme.json` paths now match the published ZIP layout

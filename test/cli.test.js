@@ -93,6 +93,34 @@ describe('CLI', () => {
     assert.ok(output.includes('themes publish'));
   });
 
+  it('help <subcommand> resolves unique nested subcommands', () => {
+    // `add` exists only under `themes` — should resolve unambiguously.
+    const output = run('help add');
+    assert.ok(output.includes('themes add'),
+      'should render themes add subcommand help');
+  });
+
+  it('help <subcommand> lists candidates when ambiguous', () => {
+    // `publish` exists under both `themes` and `templates`.
+    try {
+      run('help publish');
+      assert.fail('should have errored on ambiguous subcommand');
+    } catch (err) {
+      const output = (err.stdout || '') + (err.stderr || '');
+      assert.ok(output.includes('themes publish') && output.includes('templates publish'),
+        'should list both candidates');
+    }
+  });
+
+  it('help <unknown> still reports unknown command', () => {
+    try {
+      run('help totally-not-a-thing');
+      assert.fail('should have errored');
+    } catch (err) {
+      assert.ok(err.stderr.includes('Unknown command'));
+    }
+  });
+
   it('create with name but no server still runs', () => {
     // create with a name works (will fail at template fetch, but doesn't error on arg parsing)
     try {
