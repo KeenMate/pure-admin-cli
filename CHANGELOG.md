@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.3] - 2026-05-12 [PUBLISHED]
+
+### Fixed — `--help` after a subcommand no longer executes the command
+
+Until 1.3.3, the CLI only honored `--help` / `-h` as the very first argument.
+Anywhere else, the catch-all flag parser silently captured it as a passthrough
+boolean (`opts.help = true`) and the command continued to run. For inspection
+verbs like `themes list --help` this was merely confusing; for destructive
+verbs like `themes publish --help` and `templates publish --help` it performed
+a real pack-and-upload against the resolved target.
+
+`--help` / `-h` is now intercepted immediately after the command name and
+before any flag parsing or network setup. The CLI prints the matching help
+screen and exits:
+
+- `pureadmin themes publish --help` → `themes publish` subcommand help
+- `pureadmin themes --help` → `themes` command help
+- `pureadmin themes --help publish` → same (position-tolerant)
+- `pureadmin <unknown> --help` → falls back to global usage
+
+A CLI test (`test/cli.test.js`) asserts the no-execute behavior so the same
+regression can't reach destructive verbs again unnoticed.
+
 ## [1.3.2] - 2026-05-02 [PUBLISHED]
 
 ### Fixed — packed `theme.json` paths now match the published ZIP layout

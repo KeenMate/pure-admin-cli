@@ -70,6 +70,29 @@ describe('CLI', () => {
     assert.ok(output.includes('preset(s)') || output.includes('No presets'));
   });
 
+  it('--help after a subcommand shows help, does not execute', () => {
+    // Regression: `themes publish --help` used to run a real publish because
+    // --help fell through to the unknown-flag passthrough as opts.help = true.
+    const output = run('themes publish --help');
+    assert.ok(output.includes('themes publish'), 'should show subcommand help');
+    assert.ok(output.includes('Flags:') || output.includes('--no-build'),
+      'should show flag listing, not run the command');
+    assert.ok(!output.toLowerCase().includes('uploading'),
+      'must not actually publish');
+  });
+
+  it('--help on a command with subcommands shows command help', () => {
+    const output = run('themes --help');
+    assert.ok(output.includes('themes'));
+    assert.ok(output.includes('publish') && output.includes('list'),
+      'should list subcommands');
+  });
+
+  it('-h after a subcommand also shows help', () => {
+    const output = run('themes publish -h');
+    assert.ok(output.includes('themes publish'));
+  });
+
   it('create with name but no server still runs', () => {
     // create with a name works (will fail at template fetch, but doesn't error on arg parsing)
     try {

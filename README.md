@@ -4,11 +4,11 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New in v1.3.3
+- **Fix: `--help` after a subcommand no longer executes the command** — `pureadmin themes publish --help` and other subcommand `--help` invocations used to fall through the catch-all flag parser as a passthrough boolean and run the real command — which for destructive verbs like `themes publish` and `templates publish` meant a live pack-and-upload against the resolved target. `--help` / `-h` is now intercepted immediately after the command name and routed to the matching help screen before any flag parsing or network setup. Works at any position: `themes publish --help`, `themes --help publish`, and `<unknown> --help` all do the right thing.
+
 ## What's New in v1.3.2
 - **Fix: packed `theme.json` paths now match the published ZIP layout** — `themes pack` was already writing the CSS to `css/<id>.css` and SCSS to `scss/<id>.scss` inside the ZIP, but leaving the source-tree paths (`dist/<id>.css`, `src/scss/<id>.scss`) untouched in the embedded manifest. Consumers that trusted `colorVariants[].file` or `exports.css` got 404s. The enriched manifest now rewrites `colorVariants[*].file`, `exports.css`, and `exports.scss` to the published-ZIP paths so the manifest is self-consistent. Already-published ZIPs need a repack-and-republish to pick up the fix.
-
-## What's New in v1.3.1
-- **Fix: `.pureadmin.json` overrides no longer leak into `pureadmin.lock.json`** — in 1.3.0 the install / update / add code paths consulted the merged view (base ⊕ local) when computing what to write into the lock, so a developer's personal `--path` override would silently bake into the team-shared lockfile and break CI / Docker / other clones. The 1.3.1 fix enforces a hard invariant: `pureadmin.lock.json` mirrors `pureadmin.json` exclusively; `.pureadmin.json` is a runtime overlay only and never causes a lock write. `themes install` self-heals existing polluted lockfiles by re-resolving any path-sourced lock entry whose base declaration is registry. Local-theme dev workflow is unchanged: `themes add audi --path ../pure-admin-themes/audi` still snapshots files for your iteration; the lock just stays clean.
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)
