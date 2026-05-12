@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.3.4] - 2026-05-12
+
+### Fixed — `--llm` reference and `help` output inconsistencies
+
+Auditing the `pureadmin --llm` reference doc turned up several
+discrepancies between what it claimed and what the code does:
+
+- `--server` accepts a target name *or* a raw URL, not just a URL.
+  Placeholder renamed to `<target|url>`; unknown names error with the
+  list of available targets instead of being silently treated as URLs.
+- API key resolution chain was misordered. The doc claimed
+  `PUREADMIN_API_KEY` was the fallback *after* the merged config's
+  top-level `apiKey`, but the publish code checks env first
+  (`opts.apiKey || process.env.PUREADMIN_API_KEY || config.apiKey`).
+  Reordered the chain to match.
+- The per-command `themes publish` blurb listed `PUREADMIN_API_KEY env >
+  .pureadmin.json > pureadmin.json > ~/.pureadmin.json`, which inverted
+  the priority and contradicted the resolution-chain section. Dropped,
+  replaced with a pointer to the canonical chain.
+- The config-priority list was tagged "later wins on conflict" but was
+  actually ordered highest-first. Rephrased.
+- `themes add` also accepts `--themes-dir` as an alias for `--dir`; now
+  documented.
+- `--api-key` is now surfaced as a global flag in every help screen and
+  in the `--llm` reference.
+
+Two rendering bugs in the help formatter:
+
+- `themes add <id>` displayed without the variadic ellipsis even though
+  it accepts multiple slugs and the description says "Theme
+  identifier(s)". The arg formatter only applied `...` to optional args;
+  now it applies to required+variadic too. Affects the signature line,
+  the Arguments table, and the `help themes` subcommand listing.
+- `help create` (and any other top-level command) didn't render a
+  `Global:` section — only subcommand help did. `formatCommandHelp` now
+  appends the same Global block as `formatSubcommandHelp`, so `--server`
+  and `--api-key` are visible everywhere.
+
+### Fixed — typo suggestions for unknown top-level commands
+
+`pureadmin theme list`, `pureadmin theme publish --help`, and
+`pureadmin help theme publish` all used to error with a bare
+`Unknown command: theme` (and the `--help` variant dumped global usage with
+no hint at all), even though the user was clearly one letter off from a
+real command.
+
+All three "unknown command" sites now share a `suggestCommand` helper that:
+
+1. Tries singular↔plural first — the dominant typo class for this CLI
+   (`theme` ↔ `themes`, `template` ↔ `templates`, `profile` ↔ `profiles`,
+   `preset` ↔ `presets`).
+2. Falls back to Levenshtein edit distance ≤ 1 — catches things like
+   `themss list` → "Did you mean 'themes'?".
+3. Returns nothing for unrelated input — `pureadmin xyzzy` still errors
+   with the plain message so we don't hallucinate suggestions.
+
+The suggestion is shown in the error; the command is **not** auto-routed —
+silent autocorrect would be dangerous for destructive verbs like
+`themes publish`.
+
 ## [1.3.3] - 2026-05-12 [PUBLISHED]
 
 ### Fixed — `--help` after a subcommand no longer executes the command

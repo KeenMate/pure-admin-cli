@@ -4,12 +4,12 @@ The official CLI for [Pure Admin](https://github.com/keenmate/pure-admin) — a 
 
 Build themes, validate accessibility, scaffold apps, and publish to [pureadmin.io](https://pureadmin.io).
 
+## What's New in v1.3.4
+- **Fix: typo suggestions for unknown top-level commands** — `pureadmin theme list`, `pureadmin theme publish --help`, and `pureadmin help theme publish` all used to error with a bare `Unknown command: theme` (and the `--help` variant dumped global usage with no hint), even though the user was one letter off from a real command. All three "unknown command" sites now share a `suggestCommand` helper that tries singular↔plural first (the dominant typo class — `theme` ↔ `themes`, `template` ↔ `templates`, `profile` ↔ `profiles`, `preset` ↔ `presets`) then falls back to Levenshtein edit distance ≤ 1 (so `themss list` → "Did you mean 'themes'?"). Unrelated input like `pureadmin xyzzy` still errors plainly — no hallucinated suggestions. The command is **not** auto-routed; silent autocorrect would be dangerous for destructive verbs like `themes publish`.
+
 ## What's New in v1.3.3
 - **Fix: `--help` after a subcommand no longer executes the command** — `pureadmin themes publish --help` and other subcommand `--help` invocations used to fall through the catch-all flag parser as a passthrough boolean and run the real command — which for destructive verbs like `themes publish` and `templates publish` meant a live pack-and-upload against the resolved target. `--help` / `-h` is now intercepted immediately after the command name and routed to the matching help screen before any flag parsing or network setup. Works at any position: `themes publish --help`, `themes --help publish`, and `<unknown> --help` all do the right thing.
 - **Fix: `help <subcommand>` now resolves across nested commands** — `pureadmin help publish` used to error with `Unknown command: publish` because the `help` handler only searched top-level commands. It now falls back to scanning subcommands: `help add` shows `themes add` directly (unique match), and `help publish` reports the ambiguity and lists the disambiguated forms (`help themes publish`, `help templates publish`). Unknown names still error as before.
-
-## What's New in v1.3.2
-- **Fix: packed `theme.json` paths now match the published ZIP layout** — `themes pack` was already writing the CSS to `css/<id>.css` and SCSS to `scss/<id>.scss` inside the ZIP, but leaving the source-tree paths (`dist/<id>.css`, `src/scss/<id>.scss`) untouched in the embedded manifest. Consumers that trusted `colorVariants[].file` or `exports.css` got 404s. The enriched manifest now rewrites `colorVariants[*].file`, `exports.css`, and `exports.scss` to the published-ZIP paths so the manifest is self-consistent. Already-published ZIPs need a repack-and-republish to pick up the fix.
 
 - **14 themes** — Audi, Ayu, Cobalt2, Corporate, Dark, Darkmatter, Dracula, Express, Gruvbox, Minimal, Night Owl, One Dark, Tokyo Night, Cafe Industrial
 - **Browse & download** — [pureadmin.io](https://pureadmin.io)

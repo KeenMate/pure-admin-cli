@@ -121,6 +121,62 @@ describe('CLI', () => {
     }
   });
 
+  it('singular typo on default branch suggests plural', () => {
+    // `theme list` (singular) → did-you-mean 'themes'
+    try {
+      run('theme list');
+      assert.fail('should have errored');
+    } catch (err) {
+      assert.ok(err.stderr.includes("Did you mean 'themes'"),
+        `expected suggestion, got: ${err.stderr}`);
+    }
+  });
+
+  it('singular typo with --help suggests plural', () => {
+    // `theme publish --help` → did-you-mean 'themes'
+    try {
+      run('theme publish --help');
+      assert.fail('should have errored');
+    } catch (err) {
+      assert.ok(err.stderr.includes("Did you mean 'themes'"),
+        `expected suggestion, got: ${err.stderr}`);
+    }
+  });
+
+  it('help <singular-typo> suggests plural', () => {
+    // `help theme publish` → did-you-mean 'themes'
+    try {
+      run('help theme publish');
+      assert.fail('should have errored');
+    } catch (err) {
+      assert.ok(err.stderr.includes("Did you mean 'themes'"),
+        `expected suggestion, got: ${err.stderr}`);
+    }
+  });
+
+  it('edit-distance-1 typo suggests the closest command', () => {
+    // `themss` → one substitution from `themes`
+    try {
+      run('themss list');
+      assert.fail('should have errored');
+    } catch (err) {
+      assert.ok(err.stderr.includes("Did you mean 'themes'"),
+        `expected suggestion, got: ${err.stderr}`);
+    }
+  });
+
+  it('totally unrelated typo has no suggestion', () => {
+    try {
+      run('xyzzy');
+      assert.fail('should have errored');
+    } catch (err) {
+      assert.ok(err.stderr.includes('Unknown command'),
+        `expected plain unknown-command error, got: ${err.stderr}`);
+      assert.ok(!err.stderr.includes('Did you mean'),
+        'should not hallucinate a suggestion for unrelated input');
+    }
+  });
+
   it('create with name but no server still runs', () => {
     // create with a name works (will fail at template fetch, but doesn't error on arg parsing)
     try {
