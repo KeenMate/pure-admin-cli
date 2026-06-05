@@ -8,23 +8,32 @@
 		Sidebar,
 		SidebarItem,
 		Main,
-		Footer{{#SETTINGS_PANEL}},
-		SettingsPanel{{/SETTINGS_PANEL}}{{#PROFILE_PANEL}},
-		ProfilePanel{{/PROFILE_PANEL}}
+		Footer,
+		// data-pa="settings-imports"
+		SettingsPanel,
+		// /data-pa="settings-imports"
+		// data-pa="profile-imports"
+		ProfilePanel,
+		// /data-pa="profile-imports"
 	} from '@keenmate/svelte-pure-admin';
-	{{#SETTINGS_PANEL}}import type { ThemeOption } from '@keenmate/svelte-pure-admin';
-	{{/SETTINGS_PANEL}}import '../app.css';
+	// data-pa="settings-types"
+	import type { ThemeOption } from '@keenmate/svelte-pure-admin';
+	// /data-pa="settings-types"
+	import '../app.css';
 
-	{{#SETTINGS_PANEL}}const availableThemes: ThemeOption[] = [
+	// data-pa="settings-data"
+	const availableThemes: ThemeOption[] = [
 		__THEME_OPTIONS__
 	];
-	{{/SETTINGS_PANEL}}
+	// /data-pa="settings-data"
 
 	let { children } = $props();
 
 	let sidebarMobileVisible = $state(false);
 	let sidebarUserToggled = $state(false);
-	{{#PROFILE_PANEL}}let showProfilePanel = $state(false);{{/PROFILE_PANEL}}
+	// data-pa="profile-state"
+	let showProfilePanel = $state(false);
+	// /data-pa="profile-state"
 
 	function toggleSidebar() {
 		if (typeof document !== 'undefined') {
@@ -52,12 +61,14 @@
 }}>
 	<Layout>
 		<Navbar onburgerclick={toggleSidebar} showBurger={true} burgerActive={sidebarMobileVisible || sidebarUserToggled}>
-			{{#PROFILE_PANEL}}{#snippet profile()}
+			<!-- data-pa="profile-snippet" -->
+			{#snippet profile()}
 				<button class="pa-header__profile-btn" onclick={() => showProfilePanel = !showProfilePanel} aria-label="User Profile">
 					<span class="pa-btn__icon">👤</span>
 					<span class="pa-header__profile-name">User</span>
 				</button>
-			{/snippet}{{/PROFILE_PANEL}}
+			{/snippet}
+			<!-- /data-pa="profile-snippet" -->
 		</Navbar>
 
 		<LayoutInner>
@@ -74,10 +85,14 @@
 			</LayoutContent>
 		</LayoutInner>
 
-		{{#SETTINGS_PANEL}}<SettingsPanel
+		<!-- data-pa="settings-component" -->
+		<SettingsPanel
 			themes={availableThemes}
 			defaultTheme="__DEFAULT_THEME__"
-		/>{{/SETTINGS_PANEL}}
-		{{#PROFILE_PANEL}}<ProfilePanel bind:show={showProfilePanel} name="User" email="user@example.com" role="User" />{{/PROFILE_PANEL}}
+		/>
+		<!-- /data-pa="settings-component" -->
+		<!-- data-pa="profile-component" -->
+		<ProfilePanel bind:show={showProfilePanel} name="User" email="user@example.com" role="User" />
+		<!-- /data-pa="profile-component" -->
 	</Layout>
 </PureAdminProvider>

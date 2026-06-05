@@ -11,6 +11,20 @@
     "@keenmate/svelte-pure-admin": "latest",
     "@keenmate/pure-admin-core": "latest"
   },
+  "features": {
+    "profile-panel": {
+      "description": "User profile slide-in panel",
+      "isDefault": false,
+      "cli": "--profile-panel",
+      "points": ["profile-imports", "profile-state", "profile-snippet", "profile-component"]
+    },
+    "settings-panel": {
+      "description": "Theme switcher / settings panel",
+      "isDefault": false,
+      "cli": "--settings-panel",
+      "points": ["settings-imports", "settings-types", "settings-data", "settings-component"]
+    }
+  },
   "pageTypes": {
     "dashboard": {
       "template": "pages/dashboard.svelte",
