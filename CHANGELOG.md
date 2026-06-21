@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **`--lucide` support for the Phoenix template.** Pairs with keen_pure_admin 1.3's `<.icon>` dispatcher + `:icon_callback` config: the generated app ships ~27 Lucide outline SVGs under `priv/static/assets/icons/lucide/`, an `<App>Web.Icons` module that pattern-matches `lucide-X` names into `<img src="/assets/icons/lucide/X.svg">`, and `icon_callback: {<App>Web.Icons, :render}` wired in `config.exs`. Inline `__ICON:name__` and sidebar `icon=` attrs both render as `lucide-X` strings, routed through `<.icon>`.
+  - New `lucideKebabMap` in `lib/create/icons.js` mirrors the heroicons-curated canonical set, mapping to current upstream Lucide filenames (`pen-to-square` → `square-pen`, `house` → `house`, etc.). Decoupled from `lucideMap` (Svelte component names) so the Svelte path is untouched.
+  - `resolveIconMarkup` and `resolveIconAttr` are now tech-aware for Lucide — Elixir gets `lucide-X` strings, Svelte keeps PascalCase component names.
+  - New synthetic feature flags `lucide` and `heroicons` (alongside existing `font-awesome`) in `lib/commands/create.js`, so recipe steps can gate provider-specific scaffold with `{ if: "lucide" }` / `{ unless: "lucide" }`.
+
+### Changed
+
+- **`resolveIconMarkup` Font-Awesome branch emits `<.faicon name="X" />` for Phoenix templates** instead of raw `<i class="fa-solid fa-X"></i>`. Renders identically (a `<.icon name="fa-…">` attr also routes through `<.faicon>` via the smart dispatcher), but inline `__ICON:name__` substitutions now flow through the same component path as sidebar / button icon-attr usage — single FA code path. Svelte templates keep the raw `<i class>` emission (HEEx component syntax is invalid there). Tech is detected from `ctx.recipe?.technology`; new optional 4th arg on `resolveIconMarkup`.
+
 ## [1.3.4] - 2026-05-12
 
 ### Fixed — `--llm` reference and `help` output inconsistencies
